@@ -1,0 +1,8 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache
+.vscode
+dist/
+tests/temp
+**/fast_fig_presets.json
