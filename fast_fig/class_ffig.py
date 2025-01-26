@@ -1013,13 +1013,14 @@ class FFig:
         Returns
         -------
         list[Path]
-            List of paths to all files that were successfully saved
+            Returns list of paths to all files that were successfully saved.
 
         Examples
         --------
         >>> fig.save('plot.png', 600)  # Save as PNG with 600 dpi
         >>> fig.save('plot.png', 'pdf')  # Save as both PNG and PDF
         >>> fig.save('plot', '.png', '.pdf', '.svg')  # Save in multiple formats
+        >>> paths = fig.save('plot.png')  # Get saved paths
         """
         kwargs.setdefault("dpi", 300)  # Default to 300 dpi
         saved_files = []
@@ -1061,7 +1062,7 @@ class FFig:
             plt.draw()
             
         return saved_files
-
+    
     def clear(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> bool:
         """Clear figure content to reuse the figure.
         

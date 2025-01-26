@@ -169,16 +169,19 @@ def load_config(filepath: str | Path) -> dict:
     if not filepath.is_file():
         raise FileNotFoundError(f"File not found: '{filepath}'")
         
+    # First check file extension
+    file_ext = filepath.suffix.lower()
+    if file_ext not in ['.yaml', '.yml', '.json']:
+        raise ValueError(f"Unsupported file format: {file_ext}. Use .json, .yaml, or .yml")
+        
     try:
         with filepath.open(mode="r", encoding="utf-8") as file:
-            if filepath.suffix.lower() in ['.yaml', '.yml']:
+            if file_ext in ['.yaml', '.yml']:
                 if not YAML_AVAILABLE:
                     raise ValueError("YAML support requires PyYAML package. Install with: pip install pyyaml")
                 data = yaml.safe_load(file)
-            elif filepath.suffix.lower() == '.json':
+            else:  # .json
                 data = json.load(file)
-            else:
-                raise ValueError(f"Unsupported file format: {filepath.suffix}. Use .json, .yaml, or .yml")
     except (json.JSONDecodeError, yaml.YAMLError) as e:
         raise ValueError(f"Invalid file format in '{filepath}': {str(e)}") from e
     except OSError as e:
@@ -194,17 +197,34 @@ def generate_example(filepath: str = "fast_fig_presets_example") -> None:
     ----------
     filepath : str, optional
         Base path for generated files, by default "fast_fig_presets_example"
-        Will generate both YAML (preferred) and JSON versions
+        Will generate both YAML (preferred) and JSON versions if YAML is available
+        
+    Notes
+    -----
+    If the provided filepath includes an extension (.yaml, .yml, or .json),
+    only that format will be generated. Otherwise, both YAML (if available)
+    and JSON versions will be generated.
     """
     example_dict = define_presets()
+    filepath = Path(filepath)
     
-    # Generate YAML example if available (preferred format)
-    if YAML_AVAILABLE:
-        yaml_path = Path(filepath).with_suffix('.yaml')
-        with yaml_path.open("w", encoding="utf-8") as file:
+    # Check if specific format was requested
+    if filepath.suffix.lower() in ['.yaml', '.yml']:
+        if not YAML_AVAILABLE:
+            raise ValueError("YAML support requires PyYAML package. Install with: pip install pyyaml")
+        with filepath.open("w", encoding="utf-8") as file:
             yaml.dump(example_dict, file, sort_keys=False, indent=2)
-    
-    # Generate JSON example as fallback
-    json_path = Path(filepath).with_suffix('.json')
-    with json_path.open("w", encoding="utf-8") as file:
-        json.dump(example_dict, file, indent=2)
+    elif filepath.suffix.lower() == '.json':
+        with filepath.open("w", encoding="utf-8") as file:
+            json.dump(example_dict, file, indent=2)
+    else:
+        # No specific format requested, generate both if possible
+        if YAML_AVAILABLE:
+            yaml_path = filepath.with_suffix('.yaml')
+            with yaml_path.open("w", encoding="utf-8") as file:
+                yaml.dump(example_dict, file, sort_keys=False, indent=2)
+        
+        # Always generate JSON as fallback
+        json_path = filepath.with_suffix('.json')
+        with json_path.open("w", encoding="utf-8") as file:
+            json.dump(example_dict, file, indent=2)
