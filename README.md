@@ -1,6 +1,12 @@
 # FaSt_Fig
 FaSt_Fig is a wrapper for matplotlib that provides a simple interface for fast and easy plotting.
 
+Key functions:
+- figure instantiation in a class object
+- predefinied templates
+- simplified handling (e.g. plot with vectors)
+- save to multiple file formats
+
 ## Usage
 After installation by `pip install fast_fig` you can start with a very simple example:
 
@@ -17,7 +23,7 @@ You can also start with your own data, change to a large templateand save the fi
 data = np.array([[1,2,3,4,5],[2,4,6,8,10]])
 fig = FFig('l')
 fig.plot(data)
-fig.save('test_fig1.png')
+fig.save('test_fig1.png') # save figure
 ```
 
 FaSt_Fig allows for more complex behavior with multiple subplots, legend, grid and saving to multiple files at once.
@@ -33,6 +39,12 @@ fig.grid() # show translucent grid to highlight major ticks
 fig.xlabel('Data') # create xlabel for second axis
 fig.save('test_fig2.png','pdf') # save figure to png and pdf
 ```
+
+The following handlers can be used to access all matplotlib functionality:
+- fig.current_axis
+- fig.handle_plot
+- fig.handle_axis
+- fig.handle_fig
 
 Written by Fabian Stutzki, fast@fast-apps.de
 

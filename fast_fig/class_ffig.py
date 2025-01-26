@@ -35,7 +35,7 @@ from __future__ import annotations
 # %%
 __author__ = "Fabian Stutzki"
 __email__ = "fast@fast-apps.de"
-__version__ = "0.5.3"
+__version__ = "0.5.5"
 
 
 import logging
@@ -182,14 +182,14 @@ class FFig:
 
     def subplot(  # noqa: PLR0913
         self: FFig,
-        nrows: [int | None] = None,
-        ncols: [int | None] = None,
-        index: [int | None] = None,
+        nrows: int | None = None,
+        ncols: int | None = None,
+        index: int | None = None,
         *,  # following arguments are keyword only
-        vspace: [float | None] = None,
-        hspace: [float | None] = None,
-        sharex: [bool, str] = False,
-        sharey: [bool, str] = False,
+        vspace: float | None = None,
+        hspace: float | None = None,
+        sharex: bool| str = False,
+        sharey: bool| str = False,
     ) -> None:
         """Set current axis/subplot.
 
@@ -234,14 +234,19 @@ class FFig:
         data: list | np.ndarray | pd.DataFrame = MAT_EXAMPLE,
         *args: float | str | bool,
         **kwargs: float | str | bool,
-    ) -> None:
+    ) -> list[Line2D]:
         """Generate a line plot.
         
         Parameters
         ----------
-        mat : array-like or DataFrame
+        data : array-like or DataFrame
             If array-like: First row is used as x-values for all other rows
             If DataFrame: Index is used as x-values, each column as separate line
+            
+        Returns
+        -------
+        list[Line2D]
+            List of line objects representing the plotted data
         """
         if isinstance(data, pd.DataFrame):
             # Plot each column of the DataFrame
@@ -417,10 +422,21 @@ class FFig:
     def legend(
         self: FFig,
         *args: float | str | bool,
-        labels: str | [str] | None = None,
+        labels: str | list[str] | None = None,
         **kwargs: float | str | bool,
     ) -> None:
-        """Insert legend based on labels given in plot(x,y,label='Test1') etc."""
+        """Insert legend based on labels given in plot(x,y,label='Test1') etc.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's legend
+        labels : str | list[str] | None, optional
+            Labels to assign to the lines in the plot. If provided, 
+            overwrites existing labels, by default None
+        **kwargs : float | str | bool
+            Keyword arguments passed to matplotlib's legend
+        """
         if labels is not None:
             for ilabel, iline in enumerate(self.current_axis.lines):
                 iline.set_label(labels[ilabel])
@@ -428,21 +444,35 @@ class FFig:
         if np.size(self.current_axis.lines) != 0 and len(labels) != 0:
             self.current_axis.legend(*args, **kwargs)
 
-    def legend_entries(self: FFig) -> None:
-        """Return handle and labels of legend."""
+    def legend_entries(self) -> tuple[list[Line2D], list[str]]:
+        """Return handle and labels of legend.
+        
+        Returns
+        -------
+        tuple[list[Line2D], list[str]]
+            Tuple containing:
+            - List of Line2D objects representing plot handles
+            - List of strings representing labels
+        """
         handles, labels = self.current_axis.get_legend_handles_labels()
         return handles, labels
 
-    def legend_count(self: FFig) -> None:
-        """Return number of legend entries."""
+    def legend_count(self) -> int:
+        """Return number of legend entries.
+        
+        Returns
+        -------
+        int
+            Number of entries in the legend
+        """
         handles, _ = self.current_axis.get_legend_handles_labels()
         return np.size(handles)
 
     def set_cycle(
         self: FFig,
         colors: list,
-        color_seq: [str],
-        linestyle_seq: [str],
+        color_seq: list[str],
+        linestyle_seq: list[str],
     ) -> None:  # ,linewidth=False):
         """Set cycle for colors and linestyles (will be used in this order)."""
         # generate cycle from color_seq and linestyle_seq
