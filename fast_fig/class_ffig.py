@@ -373,8 +373,21 @@ class FFig:
         )
         return fill
 
-    def last_color(self: FFig) -> None:
-        """Return last color code used by plot."""
+    def last_color(self) -> np.ndarray:
+        """Return last color code used by plot.
+        
+        Returns
+        -------
+        np.ndarray
+            RGB color array
+            
+        Raises
+        ------
+        ValueError
+            If no plot exists yet
+        """
+        if self.handle_plot is None or len(self.handle_plot) == 0:
+            raise ValueError("No plot exists yet to get color from")
         return self.handle_plot[0].get_color()
 
     def pcolor(
@@ -840,7 +853,7 @@ class FFig:
         if self.subplot_vspace is not None and self.subplot_ncols > 1:
             self.handle_fig.subplots_adjust(vspace=self.subplot_vspace)
 
-    def watermark(  # noqa: PLR0913
+    def watermark(
         self: FFig,
         img: str | Path,
         xpos: float = 100,
@@ -849,15 +862,40 @@ class FFig:
         zorder: float = 1,
         **kwargs: float | str | bool,
     ) -> None:
-        """Include watermark image to plot."""
-        img = Path(img)
-        if img.is_file():
-            self.handle_fig.figimage(img, xpos, ypos, alpha=alpha, zorder=zorder, **kwargs)
+        """Include watermark image to plot.
+        
+        Parameters
+        ----------
+        img : str | Path
+            Path to image file
+        xpos : float
+            X position of watermark
+        ypos : float
+            Y position of watermark
+        alpha : float
+            Transparency of watermark
+        zorder : float
+            Z-order of watermark
+        **kwargs : float | str | bool
+            Additional keyword arguments passed to figimage
+            
+        Raises
+        ------
+        FileNotFoundError
+            If image file does not exist
+        """
+        img_path = Path(img)
+        if img_path.is_file():
+            self.handle_fig.figimage(img_path, xpos, ypos, alpha=alpha, zorder=zorder, **kwargs)
         else:
-            FileNotFoundError("watermark(): File not found")
+            raise FileNotFoundError(f"Watermark image not found: {img_path}")
 
     def show(self: FFig) -> None:
-        """Show figure in interactive console (similar to save)."""
+        """Show figure in interactive console.
+        
+        Displays the figure in the current backend's interactive window.
+        Automatically calls set_parameters() before showing.
+        """
         self.set_parameters()
         plt.show()
 
@@ -866,22 +904,50 @@ class FFig:
         filename: str | Path,
         *args: float | str | bool,
         **kwargs: float | str | bool,
-    ) -> None:
+    ) -> list[Path]:
         """Save figure as image (png, pdf...).
 
-        save('test.png',600,'pdf') # save test.png and test.pdf with 600dpi
+        Parameters
+        ----------
+        filename : str | Path
+            Base filename to save to. If no extension, defaults to .png
+        *args : float | str | bool
+            Can include:
+            - Integer for DPI value
+            - Strings for additional formats (e.g., 'pdf', '.pdf')
+        **kwargs : float | str | bool
+            Additional arguments passed to savefig. Common ones:
+            - dpi : int, default=300
+                The resolution in dots per inch
+            - bbox_inches : str
+                How to trim the figure
+            - transparent : bool
+                Whether to save with transparent background
+
+        Returns
+        -------
+        list[Path]
+            List of paths to all files that were successfully saved
+
+        Examples
+        --------
+        >>> fig.save('plot.png', 600)  # Save as PNG with 600 dpi
+        >>> fig.save('plot.png', 'pdf')  # Save as both PNG and PDF
+        >>> fig.save('plot', '.png', '.pdf', '.svg')  # Save in multiple formats
         """
         kwargs.setdefault("dpi", 300)  # Default to 300 dpi
+        saved_files = []
 
         filepath = Path(filename)
-
         format_set = set()
+        
         if filepath.suffix == "":
             msg = f"FFig: Filepath {filepath} has no suffix, defaulting to .png!"
             self.logger.warning(msg)
             format_set.add(".png")
         else:
             format_set.add(filepath.suffix)
+            
         for iarg in args:
             if isinstance(iarg, int):
                 kwargs["dpi"] = iarg
@@ -898,13 +964,17 @@ class FFig:
             try:
                 ifilepath.parent.mkdir(parents=True, exist_ok=True)
                 self.handle_fig.savefig(ifilepath, **kwargs)
+                saved_files.append(ifilepath)
             except (FileNotFoundError, PermissionError, OSError):
                 except_message = f"save(): Figure cannot be saved to {ifilepath}"
                 self.logger.exception(except_message)
+                
         if self.figure_show:
             plt.show()  # block=False)
         else:
             plt.draw()
+            
+        return saved_files
 
     def clear(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
         """Clear figure content in order to reuse figure."""
