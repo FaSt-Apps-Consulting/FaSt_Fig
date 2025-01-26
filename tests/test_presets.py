@@ -3,7 +3,7 @@
 # %%
 import json
 from pathlib import Path
-
+import numpy as np
 import fast_fig
 
 
@@ -57,7 +57,8 @@ def test_presets_dict() -> None:
     fig.plot()
     fig.plot()
     assert fig.colors["orange"][0] == 1, "Orange color should have first RGB value of 1"
-    assert fig.handle_plot[0].get_color()[0] == 1, "Second plot should be orange"
+    assert np.isclose(fig.handle_plot[0].get_color()[0],200/255), "First plot should be yellow"
+    assert np.isclose(fig.handle_plot[1].get_color()[0],1), "Second plot should be orange"
     fig.close()
 
 

@@ -40,6 +40,7 @@ __version__ = "0.5.5"
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -68,20 +69,90 @@ class FFig:
     fig.plot([0,1,2,3,4],[0,1,1,2,3])
     fig.save('test.png')
 
-    @author: fstutzki
+    Can also be used as a context manager:
+    with FFig() as fig:
+        fig.plot(data)
+        fig.save('plot.png')
+    # Figure automatically closed
 
+    @author: fstutzki
     """
+
+    def __enter__(self) -> FFig:
+        """Enter the context manager.
+        
+        Returns
+        -------
+        FFig
+            The figure instance
+        """
+        return self
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: type[BaseException] | None) -> None:
+        """Exit the context manager and close the figure.
+        
+        Parameters
+        ----------
+        exc_type : type[BaseException] | None
+            The type of the exception that was raised
+        exc_val : BaseException | None
+            The instance of the exception that was raised
+        exc_tb : type[BaseException] | None
+            The traceback of the exception that was raised
+        """
+        self.close()
 
     def __init__(
         self: FFig,
         template: str = "m",
         nrows: int = 1,
         ncols: int = 1,
-        **kwargs: int | str,
+        **kwargs: int | str | bool | dict[str, Any] | None,
     ) -> None:
-        """Set default values and create figure.
+        """Initialize a new FFig instance.
 
-        fig = FFig("OL", nrows=2, ncols=2)
+        Parameters
+        ----------
+        template : str, optional
+            Template name defining figure style, by default "m".
+            Available templates: "m" (medium), "s" (small), "l" (large),
+            "ol" (one-line), "oe" (one-equation), "square"
+        nrows : int, optional
+            Number of subplot rows, by default 1
+        ncols : int, optional
+            Number of subplot columns, by default 1
+        **kwargs : int | str | bool | dict | None
+            Additional keyword arguments:
+            - isubplot : int
+                Initial subplot index, by default 0
+            - sharex : bool
+                Share x-axis between subplots, by default False
+            - sharey : bool
+                Share y-axis between subplots, by default False
+            - show : bool
+                Show figure after saving, by default True
+            - vspace : float | None
+                Vertical space between subplots, by default None
+            - hspace : float | None
+                Horizontal space between subplots, by default None
+            - presets : dict | str | Path | None
+                Custom presets dictionary or path to JSON file, by default None
+            - width : float
+                Figure width in cm (from template or preset)
+            - height : float
+                Figure height in cm (from template or preset)
+            - fontfamily : str
+                Font family name (from template or preset)
+            - fontsize : int
+                Font size in points (from template or preset)
+            - linewidth : float
+                Line width in points (from template or preset)
+
+        Example
+        -------
+        >>> fig = FFig()  # Default medium template
+        >>> fig = FFig("l", nrows=2, sharex=True)  # Large template, 2 rows sharing x-axis
+        >>> fig = FFig("s", presets="my_presets.json")  # Small template with custom presets
         """
         # Enable logger
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -253,16 +324,19 @@ class FFig:
         list[Line2D]
             List of line objects representing the plotted data
         """
+        plot_objects = []
+        
         if isinstance(data, pd.DataFrame):
             # Plot each column of the DataFrame
             for column in data.columns:
-                self.handle_plot = self.current_axis.plot(
+                lines = self.current_axis.plot(
                     data.index, 
                     data[column], 
                     label=column,
                     *args, 
                     **kwargs
                 )
+                plot_objects.extend(lines)
             # Set x-label based on index type
             if isinstance(data.index, pd.DatetimeIndex):
                 self.set_xlabel("Date")
@@ -272,10 +346,14 @@ class FFig:
             if np.shape(data)[0] > np.shape(data)[1]:
                 data = data.T
             for imat in data[1:]:
-                self.handle_plot = self.current_axis.plot(data[0, :], imat, *args, **kwargs)
+                lines = self.current_axis.plot(data[0, :], imat, *args, **kwargs)
+                plot_objects.extend(lines)
         else:
-            self.handle_plot = self.current_axis.plot(data, *args, **kwargs)
-        return self.handle_plot
+            lines = self.current_axis.plot(data, *args, **kwargs)
+            plot_objects.extend(lines)
+            
+        self.handle_plot = plot_objects
+        return plot_objects
 
     def semilogx(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> list[Line2D]:
         """Create a plot with logarithmic x-axis scaling.
@@ -976,16 +1054,65 @@ class FFig:
             
         return saved_files
 
-    def clear(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """Clear figure content in order to reuse figure."""
-        self.handle_fig.clf(*args, **kwargs)
+    def clear(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> bool:
+        """Clear figure content to reuse the figure.
+        
+        Clears all plots and axes but maintains the figure object,
+        allowing it to be reused for new plots.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's clf()
+        **kwargs : float | str | bool
+            Keyword arguments passed to matplotlib's clf()
+            
+        Returns
+        -------
+        bool
+            True if clearing was successful, False otherwise
+            
+        Example
+        -------
+        >>> fig.plot(data1)
+        >>> fig.clear()  # Clear for reuse
+        >>> fig.plot(data2)  # Plot new data
+        """
+        try:
+            self.handle_fig.clf(*args, **kwargs)
+            return True
+        except (ValueError, TypeError, AttributeError) as e:
+            self.logger.exception(f"Error clearing figure: {str(e)}")
+            return False
 
-    def close(self: FFig) -> None:
-        """Close figure."""
+    def close(self: FFig) -> bool:
+        """Close the figure and clean up resources.
+        
+        Closes the figure window and cleans up memory resources.
+        After closing, the figure cannot be reused - create a new figure instead.
+        
+        Returns
+        -------
+        bool
+            True if closing was successful, False otherwise
+            
+        Notes
+        -----
+        - Use clear() instead if you want to reuse the figure
+        - This method is automatically called when using the context manager
+        
+        Example
+        -------
+        >>> fig.plot(data)
+        >>> fig.save('plot.png')
+        >>> fig.close()  # Clean up when done
+        """
         try:
             plt.close(self.handle_fig)
-        except (ValueError, TypeError, AttributeError):
-            self.logger.exception("close(): Figure cannot be closed")
+            return True
+        except (ValueError, TypeError, AttributeError) as e:
+            self.logger.exception(f"Error closing figure: {str(e)}")
+            return False
 
 
 # %%
