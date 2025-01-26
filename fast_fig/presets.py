@@ -190,7 +190,7 @@ def load_config(filepath: str | Path) -> dict:
     return data
 
 
-def generate_example(filepath: str = "fast_fig_presets_example") -> None:
+def generate_file(filepath: str = "fast_fig_presets_example") -> None:
     """Generate a preset example that can be modified for custom presets.
 
     Parameters

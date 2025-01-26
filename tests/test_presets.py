@@ -64,10 +64,25 @@ def test_presets_dict() -> None:
     fig.close()
 
 
-def test_presets_example(tmpdir: str) -> None:
+def test_presets_generate_yaml(tmpdir: str) -> None:
+    """Test generation of presets example."""
+    yaml_path = Path(tmpdir) / "test_presets_example.yaml"
+
+    if fast_fig.presets.YAML_AVAILABLE:
+        fast_fig.presets.generate_file(filepath=yaml_path)
+        assert yaml_path.is_file(), f"Generate preset example should generate {yaml_path}"
+        
+        # Verify YAML content
+        with yaml_path.with_suffix('.yaml').open('r', encoding="utf-8") as file:
+            yaml_data = yaml.safe_load(file)
+        assert "color_seq" in yaml_data, "YAML should contain color_seq"
+        assert "colors" in yaml_data, "YAML should contain colors"
+        
+
+def test_presets_generate_json(tmpdir: str) -> None:
     """Test generation of presets example."""
     json_path = Path(tmpdir) / "test_presets_example.json"
-    fast_fig.presets.generate_example(filepath=json_path)
+    fast_fig.presets.generate_file(filepath=json_path)
     assert json_path.is_file(), f"Generate preset example should generate {json_path}"
 
 
@@ -116,23 +131,6 @@ def test_presets_yaml_yml_extension(tmpdir: str) -> None:
     fig.close()
 
 
-def test_generate_yaml_example(tmpdir: str) -> None:
-    """Test generation of YAML example file."""
-    example_path = Path(tmpdir) / "test_presets_example"
-    fast_fig.presets.generate_example(filepath=str(example_path))
-    
-    # Check JSON file
-    assert example_path.with_suffix('.json').is_file(), "JSON example should be generated"
-    
-    # Check YAML file if PyYAML is available
-    if fast_fig.presets.YAML_AVAILABLE:
-        assert example_path.with_suffix('.yaml').is_file(), "YAML example should be generated"
-        
-        # Verify YAML content
-        with example_path.with_suffix('.yaml').open('r', encoding="utf-8") as file:
-            yaml_data = yaml.safe_load(file)
-        assert "color_seq" in yaml_data, "YAML should contain color_seq"
-        assert "colors" in yaml_data, "YAML should contain colors"
 
 
 def test_invalid_yaml(tmpdir: str) -> None:

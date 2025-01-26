@@ -115,3 +115,22 @@ fig.set_xlabel('Date')
 fig.set_ylabel('Value')
 fig.set_title('DataFrame Column Values Over Time')
 fig.show()
+
+# %% Example for custom preset with YAML file
+# Create a custom preset configuration
+import fast_fig
+
+fast_fig.presets.generate_file(filepath="custom_preset.yaml")
+
+# Use the custom preset
+fig = FFig(presets='custom_preset.yaml')
+x = np.linspace(0, 10, 100)
+fig.plot(x, np.sin(x), label='sin(x)')
+fig.plot(x, np.cos(x), label='cos(x)')
+fig.set_xlabel('x')
+fig.set_ylabel('y')
+fig.set_title('Publication-Ready Plot')
+fig.legend()
+fig.grid()
+fig.show()
+# fig.save('publication_plot.png')  # Will save with high DPI and tight layout
