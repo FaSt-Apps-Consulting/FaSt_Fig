@@ -22,8 +22,9 @@ numpy = "^1.2"
 matplotlib = "^3.6"
 logging = "^0.4"
 pathlib = "^1.0"
+pandas = "^2.1"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^8"
 ruff = "^0.3"
 ipykernel = "^6.29"

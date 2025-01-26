@@ -46,6 +46,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
 from packaging import version
+import pandas as pd  # Add pandas import at the top
 
 from . import presets
 
@@ -230,18 +231,40 @@ class FFig:
 
     def plot(
         self: FFig,
-        mat: [list, np.ndarray] = MAT_EXAMPLE,
+        data: list | np.ndarray | pd.DataFrame = MAT_EXAMPLE,
         *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> None:
-        """Generate a line plot."""
-        if np.ndim(mat) > 1:
-            if np.shape(mat)[0] > np.shape(mat)[1]:
-                mat = mat.T
-            for imat in mat[1:]:
-                self.handle_plot = self.current_axis.plot(mat[0, :], imat, *args, **kwargs)
+        """Generate a line plot.
+        
+        Parameters
+        ----------
+        mat : array-like or DataFrame
+            If array-like: First row is used as x-values for all other rows
+            If DataFrame: Index is used as x-values, each column as separate line
+        """
+        if isinstance(data, pd.DataFrame):
+            # Plot each column of the DataFrame
+            for column in data.columns:
+                self.handle_plot = self.current_axis.plot(
+                    data.index, 
+                    data[column], 
+                    label=column,
+                    *args, 
+                    **kwargs
+                )
+            # Set x-label based on index type
+            if isinstance(data.index, pd.DatetimeIndex):
+                self.set_xlabel("Date")
+            elif data.index.name:
+                self.set_xlabel(data.index.name)
+        elif np.ndim(data) > 1:
+            if np.shape(data)[0] > np.shape(data)[1]:
+                data = data.T
+            for imat in data[1:]:
+                self.handle_plot = self.current_axis.plot(data[0, :], imat, *args, **kwargs)
         else:
-            self.handle_plot = self.current_axis.plot(mat, *args, **kwargs)
+            self.handle_plot = self.current_axis.plot(data, *args, **kwargs)
         return self.handle_plot
 
     def semilogx(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:

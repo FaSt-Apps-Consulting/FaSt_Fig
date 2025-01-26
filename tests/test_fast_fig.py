@@ -3,15 +3,16 @@
 # %%
 
 import numpy as np
+import pandas as pd
 
 from fast_fig import FFig
 
 # %%
-SHOW = False  # True requires manual closing of windows
+SHOW = True  # True requires manual closing of windows
 
 
 # %%
-def test_plot() -> None:
+def test_ffig() -> None:
     """Test basic plot."""
     fig = FFig(show=SHOW)
     fig.plot()
@@ -19,7 +20,7 @@ def test_plot() -> None:
     fig.close()
 
 
-def test_plot_args() -> None:
+def test_ffig_args() -> None:
     """Test basic plot."""
     fig = FFig("l", 2, 1, show=SHOW)
     fig.plot()
@@ -27,7 +28,7 @@ def test_plot_args() -> None:
     fig.close()
 
 
-def test_plot1() -> None:
+def test_plot_1d() -> None:
     """Test plot of vector."""
     fig = FFig(show=SHOW)
     fig.plot(np.random.randn(5))
@@ -97,4 +98,22 @@ def test_subplot_nrows_cols() -> None:
         3,
     ), "Subplot(nrows=4, ncols=3) should give 4x3 plots."
     assert fig.subplot_index == 4, "subplot(index=4) should set current axe number to 4"
+    fig.close()
+
+
+def test_plot_dataframe() -> None:
+    """Test plot of pandas DataFrame with two columns and index."""
+    fig = FFig(show=SHOW)
+    
+    # Create a test DataFrame
+    index = pd.date_range('2024-01-01', periods=5, freq='D')
+    df = pd.DataFrame({
+        'A': [1, 2, 3, 4, 5],
+        'B': [2, 4, 6, 8, 10]
+    }, index=index)
+
+    
+    fig.plot(df)
+    assert len(fig.current_axis._children) == 2, "Plot with DataFrame of two columns should generate two lines!"
+    assert fig.current_axis.get_xlabel() == "Date", "xlabel should default to index name for DataFrame!"
     fig.close()
