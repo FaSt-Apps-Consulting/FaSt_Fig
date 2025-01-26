@@ -2,6 +2,7 @@
 
 # %%
 import numpy as np
+import pandas as pd
 
 from fast_fig import FFig
 
@@ -11,7 +12,7 @@ fig.plot([1, 1, 4, 1])
 fig.plot([2, 3, 4, 1])
 fig.legend()
 fig.show()
-# fig.save("FaSt_Fig_example.png")  # noqa: ERA001
+# fig.save("fig_example1.png")  # noqa: ERA001
 
 # %% More complex example
 fig = FFig("l", nrows=2, sharex=True)  # create figure with template l=large
@@ -24,7 +25,7 @@ fig.legend()  # generate legend
 fig.grid()  # show translucent grid to highlight major ticks
 fig.set_xlabel("Data")  # create xlabel for second axis
 fig.show()
-fig.save("fig1.png", "pdf")  # save figure to png and pdf  # noqa: ERA001
+# fig.save("fig_example2.png", "pdf")  # save figure to png and pdf  # noqa: ERA001
 
 
 # %% Check color sequence
@@ -94,5 +95,23 @@ fig.set_title("20% contour")
 fig.set_ylabel("Y-Axis")
 fig.set_xlabel("X-Axis")  # create xlabel for second axis
 fig.suptitle("Simulation result")  # set title for subplot
+fig.show()
 # fig.save("example_pcolor.png")  # save figure to png and pdf  # noqa: ERA001
+
+# %% DataFrame example
+# Create sample DataFrame
+dates = pd.date_range('2024-01-01', periods=10)
+df = pd.DataFrame({
+    'A': np.random.randn(10),
+    'B': np.random.randn(10) + 2,
+    'C': np.random.randn(10) - 2
+}, index=dates)
+
+# Plot DataFrame columns
+fig = FFig('l')
+fig.plot(df)
+fig.legend()
+fig.set_xlabel('Date')
+fig.set_ylabel('Value')
+fig.set_title('DataFrame Column Values Over Time')
 fig.show()
