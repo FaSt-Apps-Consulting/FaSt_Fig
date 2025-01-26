@@ -43,6 +43,11 @@ from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.collections import PathCollection, PolyCollection, QuadMesh
+from matplotlib.colorbar import Colorbar
+from matplotlib.contour import QuadContourSet
+from matplotlib.lines import Line2D
 import numpy as np
 from cycler import cycler
 from packaging import version
@@ -272,15 +277,51 @@ class FFig:
             self.handle_plot = self.current_axis.plot(data, *args, **kwargs)
         return self.handle_plot
 
-    def semilogx(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """Semi-log plot on x axis."""
-        self.plot(*args, **kwargs)
+    def semilogx(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> list[Line2D]:
+        """Create a plot with logarithmic x-axis scaling.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to plot()
+        **kwargs : float | str | bool
+            Keyword arguments passed to plot()
+            
+        Returns
+        -------
+        list[Line2D]
+            List of line objects representing the plotted data
+            
+        Example
+        -------
+        >>> fig.semilogx([1, 10, 100], [1, 2, 3])
+        """
+        lines = self.plot(*args, **kwargs)
         self.xscale("log")
+        return lines
 
-    def semilogy(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """Semi-log plot on y axis."""
-        self.plot(*args, **kwargs)
+    def semilogy(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> list[Line2D]:
+        """Create a plot with logarithmic y-axis scaling.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to plot()
+        **kwargs : float | str | bool
+            Keyword arguments passed to plot()
+            
+        Returns
+        -------
+        list[Line2D]
+            List of line objects representing the plotted data
+            
+        Example
+        -------
+        >>> fig.semilogy([1, 2, 3], [1, 10, 100])
+        """
+        lines = self.plot(*args, **kwargs)
         self.yscale("log")
+        return lines
 
     def fill_between(
         self: FFig,
@@ -289,24 +330,89 @@ class FFig:
         alpha: float = 0.1,
         linewidth: float = 0,
         **kwargs: float | str | bool,
-    ) -> None:
-        """Fill area below or between lines."""
+    ) -> mpl.collections.PolyCollection:
+        """Fill the area between two curves.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's fill_between. Common usage:
+            - x : array-like
+                The x coordinates
+            - y1, y2 : array-like
+                The y coordinates between which to fill
+        color : list | None, optional
+            Color for filling, by default None (uses last plot color)
+        alpha : float, optional
+            Transparency, by default 0.1
+        linewidth : float, optional
+            Width of the boundary line, by default 0
+        **kwargs : float | str | bool
+            Additional keyword arguments passed to fill_between
+            
+        Returns
+        -------
+        mpl.collections.PolyCollection
+            The filled area
+            
+        Example
+        -------
+        >>> x = np.linspace(0, 2, 100)
+        >>> y1 = np.sin(2*np.pi*x)
+        >>> y2 = np.sin(2*np.pi*x) + 0.2
+        >>> fig.fill_between(x, y1, y2, alpha=0.3)
+        """
         if color is None:
             color = self.last_color()
-        self.current_axis.fill_between(
+        fill = self.current_axis.fill_between(
             *args,
             color=color,
             alpha=alpha,
             linewidth=linewidth,
             **kwargs,
         )
+        return fill
 
     def last_color(self: FFig) -> None:
         """Return last color code used by plot."""
         return self.handle_plot[0].get_color()
 
-    def pcolor(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """2D area plot."""
+    def pcolor(
+        self: FFig, 
+        *args: float | str | bool, 
+        **kwargs: float | str | bool,
+    ) -> mpl.collections.QuadMesh:
+        """Create a pseudocolor plot of a 2D array.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's pcolormesh. Common usage:
+            - C : array-like
+                2D array of color values
+            - X, Y : array-like, optional
+                Coordinates of the quadrilateral corners
+        **kwargs : float | str | bool
+            Keyword arguments passed to matplotlib's pcolormesh. Common ones:
+            - cmap : str or Colormap, default='nipy_spectral'
+                Colormap to use
+            - vmin, vmax : float, optional
+                Minimum and maximum values for colormap scaling
+            - shading : {'flat', 'nearest', 'gouraud'}, optional
+                How to shade the colormap
+            
+        Returns
+        -------
+        mpl.collections.QuadMesh
+            The pseudocolor plot
+            
+        Example
+        -------
+        >>> x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
+        >>> z = np.exp(-(x**2 + y**2))
+        >>> fig.pcolor(z)
+        >>> fig.colorbar()  # Add a colorbar
+        """
         kwargs.setdefault("cmap", "nipy_spectral")
         self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
         return self.handle_surface
@@ -317,8 +423,39 @@ class FFig:
         vmin: float | None = None,
         vmax: float | None = None,
         **kwargs: float | str | bool,
-    ) -> None:
-        """2D area plot with logarithmic scale."""
+    ) -> mpl.collections.QuadMesh:
+        """Create a pseudocolor plot with logarithmic color scaling.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's pcolormesh. Common usage:
+            - C : array-like
+                2D array of color values (must be positive for log scale)
+            - X, Y : array-like, optional
+                Coordinates of the quadrilateral corners
+        vmin : float | None, optional
+            Minimum value for logarithmic scaling, by default None.
+            If None, uses the minimum of the data
+        vmax : float | None, optional
+            Maximum value for logarithmic scaling, by default None.
+            If None, uses the maximum of the data
+        **kwargs : float | str | bool
+            Additional keyword arguments passed to matplotlib's pcolormesh.
+            Same as pcolor() with the addition of logarithmic normalization
+            
+        Returns
+        -------
+        mpl.collections.QuadMesh
+            The pseudocolor plot with logarithmic color scaling
+            
+        Example
+        -------
+        >>> x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
+        >>> z = np.exp(-(x**2 + y**2)) + 1  # Add 1 to ensure positive values
+        >>> fig.pcolor_log(z, vmin=0.1, vmax=2)
+        >>> fig.colorbar()
+        """
         kwargs.setdefault("cmap", "nipy_spectral")
         kwargs_log = {}
         if vmin is not None:
@@ -329,8 +466,41 @@ class FFig:
         self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
         return self.handle_surface
 
-    def pcolor_square(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """2D area plot with axis equal and off."""
+    def pcolor_square(
+        self: FFig, 
+        *args: float | str | bool, 
+        **kwargs: float | str | bool,
+    ) -> mpl.collections.QuadMesh:
+        """Create a square pseudocolor plot with hidden axes.
+        
+        Similar to pcolor() but creates a plot with:
+        - Equal aspect ratio (square)
+        - Hidden axes and ticks
+        - Default 'nipy_spectral' colormap
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's pcolormesh. Common usage:
+            - C : array-like
+                2D array of color values
+            - X, Y : array-like, optional
+                Coordinates of the quadrilateral corners
+        **kwargs : float | str | bool
+            Keyword arguments passed to matplotlib's pcolormesh.
+            Same as pcolor() but with hidden axes
+            
+        Returns
+        -------
+        mpl.collections.QuadMesh
+            The square pseudocolor plot
+            
+        Example
+        -------
+        >>> data = np.random.rand(10, 10)  # Create 10x10 random matrix
+        >>> fig.pcolor_square(data)  # Plot as square with hidden axes
+        >>> fig.colorbar()  # Optionally add a colorbar
+        """
         kwargs.setdefault("cmap", "nipy_spectral")
         self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
         self.current_axis.axis("off")
@@ -339,19 +509,113 @@ class FFig:
         self.current_axis.set_yticks([])
         return self.handle_surface
 
-    def contour(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """2D contour plot."""
+    def contour(
+        self: FFig, 
+        *args: float | str | bool, 
+        **kwargs: float | str | bool,
+    ) -> mpl.contour.QuadContourSet:
+        """Create a 2D contour plot.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's contour. Common usage:
+            - Z : array-like
+                The height values over which the contour is drawn
+            - levels : int or array-like, optional
+                Number of contour levels or list of levels
+        **kwargs : float | str | bool
+            Keyword arguments passed to matplotlib's contour. Common ones:
+            - colors : color string or sequence of colors
+            - alpha : float
+            - linestyles : string or tuple
+            
+        Returns
+        -------
+        mpl.contour.QuadContourSet
+            The contour plot object
+            
+        Example
+        -------
+        >>> x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
+        >>> z = np.exp(-(x**2 + y**2))
+        >>> fig.contour(z, levels=[0.2, 0.5, 0.8], colors='black')
+        """
         self.handle_surface = self.current_axis.contour(*args, **kwargs)
         return self.handle_surface
 
-    def scatter(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """Plot scattered data."""
+    def scatter(
+        self: FFig, 
+        *args: float | str | bool, 
+        **kwargs: float | str | bool,
+    ) -> mpl.collections.PathCollection:
+        """Create a scatter plot.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's scatter. Common usage:
+            - x, y : array-like
+                The data positions
+            - s : float | array-like, optional
+                The marker size in points**2
+            - c : color or array-like, optional
+                The marker colors
+        **kwargs : float | str | bool
+            Keyword arguments passed to matplotlib's scatter. Common ones:
+            - alpha : float
+                The alpha blending value, between 0 (transparent) and 1 (opaque)
+            - marker : str
+                The marker style
+            - cmap : str or Colormap
+                A colormap for coloring the markers
+            - label : str
+                Label for the legend
+            
+        Returns
+        -------
+        mpl.collections.PathCollection
+            The scatter plot collection
+            
+        Example
+        -------
+        >>> x = np.random.rand(50)
+        >>> y = np.random.rand(50)
+        >>> colors = np.random.rand(50)
+        >>> fig.scatter(x, y, c=colors, s=500*colors, alpha=0.5, cmap='viridis')
+        """
         self.handle_surface = self.current_axis.scatter(*args, **kwargs)
         return self.handle_surface
 
-    def colorbar(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """Add colorbar to figure."""
-        self.handle_fig.colorbar(*args, self.handle_surface, ax=self.current_axis, **kwargs)
+    def colorbar(
+        self: FFig, 
+        *args: float | str | bool, 
+        **kwargs: float | str | bool,
+    ) -> mpl.colorbar.Colorbar:
+        """Add a colorbar to the current plot.
+        
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's colorbar
+        **kwargs : float | str | bool
+            Keyword arguments passed to colorbar. Common ones:
+            - label : str
+                Label for the colorbar
+            - orientation : {'vertical', 'horizontal'}
+                Colorbar orientation
+            
+        Returns
+        -------
+        mpl.colorbar.Colorbar
+            The colorbar object
+            
+        Example
+        -------
+        >>> fig.pcolor(data)
+        >>> fig.colorbar(label='Values')
+        """
+        return self.handle_fig.colorbar(*args, self.handle_surface, ax=self.current_axis, **kwargs)
 
     def grid(
         self: FFig,
@@ -360,14 +624,50 @@ class FFig:
         alpha: float = 0.2,
         **kwargs: int | str | bool,
     ) -> None:
-        """Access axis aspect ration."""
+        """Add a grid to the current plot.
+        
+        Parameters
+        ----------
+        *args : int | str
+            Arguments passed to matplotlib's grid
+        color : str, optional
+            Grid line color, by default "grey"
+        alpha : float, optional
+            Grid line transparency, by default 0.2
+        **kwargs : int | str | bool
+            Additional keyword arguments passed to grid. Common ones:
+            - which : {'major', 'minor', 'both'}
+                The grid lines to apply to
+            - axis : {'both', 'x', 'y'}
+                The axis to apply the grid to
+            - linestyle : str
+                The line style of the grid
+            
+        Example
+        -------
+        >>> fig.plot(data)
+        >>> fig.grid(alpha=0.3, linestyle='--')
+        """
         self.current_axis.grid(*args, color=color, alpha=alpha, **kwargs)
 
-    def set_xlim(self: FFig, xmin: float = np.inf, xmax: float = -np.inf) -> None:
+    def set_xlim(self: FFig, xmin: float | list[float] = np.inf, xmax: float = -np.inf) -> None:
         """Set limits for current x-axis.
 
-        xlim(0,1) # limit set to 0 and 1
-        xlim() # set limit to min and max
+        Parameters
+        ----------
+        xmin : float | list[float], optional
+            Minimum x value or [xmin, xmax] list, by default np.inf
+            If np.inf, will use minimum of plotted data
+        xmax : float, optional
+            Maximum x value, by default -np.inf
+            If -np.inf, will use maximum of plotted data
+            Ignored if xmin is a list
+
+        Examples
+        --------
+        >>> fig.set_xlim(0, 1)  # set limits to 0 and 1
+        >>> fig.set_xlim([0, 1])  # same as above
+        >>> fig.set_xlim()  # auto-set to data min and max
         """
         try:
             if np.size(xmin) == 2:  # noqa: PLR2004
@@ -388,14 +688,27 @@ class FFig:
                     self.current_axis.set_xlim(xmin=xmin)
                 if np.isfinite(xmax):
                     self.current_axis.set_xlim(xmax=xmax)
-        except (ValueError, TypeError):
-            self.logger.exception()
+        except (ValueError, TypeError) as e:
+            self.logger.exception(f"Error setting x limits: {str(e)}")
 
-    def set_ylim(self: FFig, ymin: float = np.inf, ymax: float = -np.inf) -> None:
+    def set_ylim(self: FFig, ymin: float | list[float] = np.inf, ymax: float = -np.inf) -> None:
         """Set limits for current y-axis.
 
-        ylim(0,1) # set limit to 0 and 1
-        ylim() # set limit to min and max
+        Parameters
+        ----------
+        ymin : float | list[float], optional
+            Minimum y value or [ymin, ymax] list, by default np.inf
+            If np.inf, will use minimum of plotted data
+        ymax : float, optional
+            Maximum y value, by default -np.inf
+            If -np.inf, will use maximum of plotted data
+            Ignored if ymin is a list
+
+        Examples
+        --------
+        >>> fig.set_ylim(0, 1)  # set limits to 0 and 1
+        >>> fig.set_ylim([0, 1])  # same as above
+        >>> fig.set_ylim()  # auto-set to data min and max
         """
         try:
             if np.size(ymin) == 2:  # noqa: PLR2004
@@ -416,8 +729,8 @@ class FFig:
                     self.current_axis.set_ylim(ymin=ymin)
                 if np.isfinite(ymax):
                     self.current_axis.set_ylim(ymax=ymax)
-        except (ValueError, TypeError):
-            self.logger.exception()
+        except (ValueError, TypeError) as e:
+            self.logger.exception(f"Error setting y limits: {str(e)}")
 
     def legend(
         self: FFig,
@@ -470,11 +783,26 @@ class FFig:
 
     def set_cycle(
         self: FFig,
-        colors: list,
+        colors: dict[str, list[int]],
         color_seq: list[str],
         linestyle_seq: list[str],
-    ) -> None:  # ,linewidth=False):
-        """Set cycle for colors and linestyles (will be used in this order)."""
+    ) -> None:
+        """Set cycle for colors and linestyles (will be used in this order).
+        
+        Parameters
+        ----------
+        colors : dict[str, list[int]]
+            Dictionary mapping color names to RGB values (0-255)
+        color_seq : list[str]
+            Sequence of color names to use from the colors dictionary
+        linestyle_seq : list[str]
+            Sequence of line styles to use (e.g., ['-', '--', ':', '-.'])
+            
+        Example
+        -------
+        >>> colors = {'blue': [33, 101, 146], 'red': [218, 4, 19]}
+        >>> fig.set_cycle(colors, ['blue', 'red'], ['-', '--'])
+        """
         # generate cycle from color_seq and linestyle_seq
         color_list = [colors[icolor] for icolor in color_seq if icolor in colors]
         cyc_color = np.tile(color_list, (np.size(linestyle_seq), 1))
@@ -488,7 +816,20 @@ class FFig:
             self.logger.exception("set_cycle(): Cannot set cycle for color and linestyle")
 
     def set_parameters(self: FFig) -> None:
-        """Set useful figure parameters, called automatically by save and show function."""
+        """Set figure parameters for optimal layout.
+        
+        This function is called automatically by save() and show().
+        It performs the following:
+        - Applies tight_layout() to optimize spacing
+        - Adjusts subplot spacing if specified during creation
+        
+        Notes
+        -----
+        If tight_layout fails, it will be logged but won't raise an error.
+        Subplot spacing is only adjusted if:
+        - hspace was specified and there are multiple rows
+        - vspace was specified and there are multiple columns
+        """
         try:
             self.handle_fig.tight_layout()
         except (ValueError, TypeError):
