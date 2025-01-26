@@ -23,6 +23,7 @@ matplotlib = "^3.6"
 logging = "^0.4"
 pathlib = "^1.0"
 pandas = "^2.1"
+pyyaml = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8"

@@ -40,7 +40,7 @@ __version__ = "0.5.5"
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -52,7 +52,9 @@ from matplotlib.lines import Line2D
 import numpy as np
 from cycler import cycler
 from packaging import version
-import pandas as pd  # Add pandas import at the top
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 from . import presets
 
@@ -307,7 +309,7 @@ class FFig:
 
     def plot(
         self: FFig,
-        data: list | np.ndarray | pd.DataFrame = MAT_EXAMPLE,
+        data: list| np.ndarray| 'pd.DataFrame' = MAT_EXAMPLE,
         *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> list[Line2D]:
@@ -326,7 +328,13 @@ class FFig:
         """
         plot_objects = []
         
-        if isinstance(data, pd.DataFrame):
+        try:
+            import pandas as pd
+            is_dataframe = isinstance(data, pd.DataFrame)
+        except ImportError:
+            is_dataframe = False
+        
+        if is_dataframe:
             # Plot each column of the DataFrame
             for column in data.columns:
                 lines = self.current_axis.plot(

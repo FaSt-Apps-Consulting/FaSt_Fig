@@ -3,6 +3,8 @@
 # %%
 import json
 from pathlib import Path
+import pytest
+import yaml
 import numpy as np
 import fast_fig
 
@@ -74,3 +76,94 @@ def test_presets_nofile() -> None:
     fig = fast_fig.FFig(presets="fast_fig_nofile.json")
     fig.plot()
     fig.close()
+
+
+def test_presets_yaml(tmpdir: str) -> None:
+    """Test loading presets from YAML file."""
+    yaml_path = Path(tmpdir) / "test_presets.yaml"
+    test_config = {
+        "yaml": {
+            "height": 5,
+            "linewidth": 5
+        }
+    }
+    
+    with yaml_path.open("w", encoding="utf-8") as file:
+        yaml.dump(test_config, file)
+        
+    fig = fast_fig.FFig(template="yaml", presets=yaml_path)
+    assert "yaml" in fig.presets, "YAML file should generate a template yaml"
+    assert fig.presets["yaml"]["height"] == 5, "Height should be 5"
+    assert fig.presets["yaml"]["linewidth"] == 5, "Linewidth should be 5"
+    fig.close()
+
+
+def test_presets_yaml_yml_extension(tmpdir: str) -> None:
+    """Test loading presets from file with .yml extension."""
+    yml_path = Path(tmpdir) / "test_presets.yml"
+    test_config = {
+        "yml": {
+            "height": 6,
+            "linewidth": 3
+        }
+    }
+    
+    with yml_path.open("w", encoding="utf-8") as file:
+        yaml.dump(test_config, file)
+        
+    fig = fast_fig.FFig(template="yml", presets=yml_path)
+    assert "yml" in fig.presets, "YML file should generate a template yml"
+    fig.close()
+
+
+def test_generate_yaml_example(tmpdir: str) -> None:
+    """Test generation of YAML example file."""
+    example_path = Path(tmpdir) / "test_presets_example"
+    fast_fig.presets.generate_example(filepath=str(example_path))
+    
+    # Check JSON file
+    assert example_path.with_suffix('.json').is_file(), "JSON example should be generated"
+    
+    # Check YAML file if PyYAML is available
+    if fast_fig.presets.YAML_AVAILABLE:
+        assert example_path.with_suffix('.yaml').is_file(), "YAML example should be generated"
+        
+        # Verify YAML content
+        with example_path.with_suffix('.yaml').open('r', encoding="utf-8") as file:
+            yaml_data = yaml.safe_load(file)
+        assert "color_seq" in yaml_data, "YAML should contain color_seq"
+        assert "colors" in yaml_data, "YAML should contain colors"
+
+
+def test_invalid_yaml(tmpdir: str) -> None:
+    """Test handling of invalid YAML file."""
+    yaml_path = Path(tmpdir) / "invalid.yaml"
+    
+    # Create invalid YAML file
+    with yaml_path.open("w", encoding="utf-8") as file:
+        file.write("invalid: yaml: : :")
+        
+    with pytest.raises(ValueError, match="Invalid file format"):
+        fast_fig.presets.load_config(yaml_path)
+
+
+def test_unsupported_format(tmpdir: str) -> None:
+    """Test handling of unsupported file format."""
+    bad_path = Path(tmpdir) / "config.txt"
+    bad_path.touch()
+    
+    with pytest.raises(ValueError, match="Unsupported file format"):
+        fast_fig.presets.load_config(bad_path)
+
+
+def test_yaml_not_available(tmpdir: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test behavior when PyYAML is not available."""
+    # Simulate PyYAML not being installed
+    monkeypatch.setattr(fast_fig.presets, "YAML_AVAILABLE", False)
+    
+    yaml_path = Path(tmpdir) / "test.yaml"
+    with yaml_path.open("w", encoding="utf-8") as file:
+        file.write("test: value")
+        
+    with pytest.raises(ValueError, match="YAML support requires PyYAML"):
+        fast_fig.presets.load_config(yaml_path)

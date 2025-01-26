@@ -3,10 +3,16 @@
 # %%
 
 import numpy as np
-import pandas as pd
+import pytest
 import matplotlib.pyplot as plt
 
 from fast_fig import FFig
+
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
 
 # %%
 SHOW = True  # True requires manual closing of windows
@@ -102,6 +108,7 @@ def test_subplot_nrows_cols() -> None:
     fig.close()
 
 
+@pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not installed")
 def test_plot_dataframe() -> None:
     """Test plot of pandas DataFrame with two columns and index."""
     fig = FFig(show=SHOW)

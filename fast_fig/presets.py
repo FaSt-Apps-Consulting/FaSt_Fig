@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
 
-DEFAULT_PRESETS = pdict = {
+DEFAULT_PRESETS = {
     "color_seq": ["blue", "red", "green", "orange"],
     "linestyle_seq": ["-", "--", ":", "-."],
     "m": {
@@ -62,17 +67,50 @@ DEFAULT_PRESETS = pdict = {
 
 
 def define_presets(presets: dict | str | Path | None = None) -> dict:
-    """Define default presets for fast_fig."""
+    """Define default presets for fast_fig.
+    
+    Parameters
+    ----------
+    presets : dict | str | Path | None, optional
+        Custom presets to override defaults. Can be:
+        - Dictionary of presets
+        - Path to YAML file (.yaml or .yml)
+        - Path to JSON file (.json)
+        - None to use defaults
+        
+    Returns
+    -------
+    dict
+        Complete presets dictionary
+        
+    Notes
+    -----
+    The function will look for configuration files in the following order:
+    1. fast_fig_presets.yaml
+    2. fast_fig_presets.yml
+    3. fast_fig_presets.json
+    """
     # define defaults in preset dictionary
     pdict = DEFAULT_PRESETS.copy()
 
-    # Overwrite defaults with presets from fast_fig_presets.json
-    if Path("fast_fig_presets.json").is_file():
-        pdict.update(load_json("fast_fig_presets.json"))
+    # First check for YAML files (preferred format)
+    yaml_paths = [Path("fast_fig_presets.yaml"), Path("fast_fig_presets.yml")]
+    yaml_found = False
+    
+    if YAML_AVAILABLE:
+        for yaml_path in yaml_paths:
+            if yaml_path.is_file():
+                pdict.update(load_config(yaml_path))
+                yaml_found = True
+                break
+    
+    # Fall back to JSON if no YAML found
+    if not yaml_found and Path("fast_fig_presets.json").is_file():
+        pdict.update(load_config("fast_fig_presets.json"))
 
-    # Overwrite defaults with presets from given JSON file
+    # Overwrite defaults with presets from given file
     if isinstance(presets, (str, Path)) and Path(presets).is_file():
-        pdict.update(load_json(presets))
+        pdict.update(load_config(presets))
 
     # Overwrite defaults with specific values
     if isinstance(presets, dict):
@@ -86,7 +124,18 @@ def define_presets(presets: dict | str | Path | None = None) -> dict:
 
 
 def fill_preset(preset: dict) -> dict:
-    """Fill incomplete preset with defaults."""
+    """Fill incomplete preset with defaults.
+    
+    Parameters
+    ----------
+    preset : dict
+        Preset dictionary to fill with defaults
+        
+    Returns
+    -------
+    dict
+        Complete preset dictionary with all required fields
+    """
     preset.setdefault("width", 15)
     preset.setdefault("height", 10)
     preset.setdefault("fontfamily", "sans-serif")
@@ -95,49 +144,67 @@ def fill_preset(preset: dict) -> dict:
     return preset
 
 
-def load_json(filepath: str | Path) -> dict:
-    """Load a preset from a JSON file.
+def load_config(filepath: str | Path) -> dict:
+    """Load a preset from a JSON or YAML file.
 
-    Args:
-    ----
-        filepath (Union[str, Path]): JSON file path.
+    Parameters
+    ----------
+    filepath : str | Path
+        Path to JSON or YAML file
 
-    Returns:
+    Returns
     -------
-        dict: Loaded JSON data.
+    dict
+        Loaded configuration data
 
-    Raises:
+    Raises
     ------
-        FileNotFoundError: If the file is not found.
-        IOError: If there's an error reading the file.
-        json.JSONDecodeError: If the JSON structure is invalid.
-
+    FileNotFoundError
+        If the file is not found
+    ValueError
+        If the file format is not supported or content is invalid
     """
     filepath = Path(filepath)
+    
+    if not filepath.is_file():
+        raise FileNotFoundError(f"File not found: '{filepath}'")
+        
     try:
         with filepath.open(mode="r", encoding="utf-8") as file:
-            data = json.load(file)
-    except FileNotFoundError as e:
-        msg = f"File not found: '{filepath}'"
-        raise FileNotFoundError(msg) from e
+            if filepath.suffix.lower() in ['.yaml', '.yml']:
+                if not YAML_AVAILABLE:
+                    raise ValueError("YAML support requires PyYAML package. Install with: pip install pyyaml")
+                data = yaml.safe_load(file)
+            elif filepath.suffix.lower() == '.json':
+                data = json.load(file)
+            else:
+                raise ValueError(f"Unsupported file format: {filepath.suffix}. Use .json, .yaml, or .yml")
+    except (json.JSONDecodeError, yaml.YAMLError) as e:
+        raise ValueError(f"Invalid file format in '{filepath}': {str(e)}") from e
     except OSError as e:
-        msg = f"Error reading file: '{filepath}'"
-        raise OSError(msg) from e
-    except json.JSONDecodeError as e:
-        msg = f"Invalid JSON structure in file: '{filepath}'"
-        raise json.JSONDecodeError(msg, e.doc, e.pos) from e
+        raise OSError(f"Error reading file '{filepath}': {str(e)}") from e
+        
     return data
 
 
-def generate_example(filepath: str = "fast_fig_presets_example.json") -> None:
+def generate_example(filepath: str = "fast_fig_presets_example") -> None:
     """Generate a preset example that can be modified for custom presets.
 
-    Args:
-    ----
-        filepath (str, optional): Path to generated JSON file.
-
+    Parameters
+    ----------
+    filepath : str, optional
+        Base path for generated files, by default "fast_fig_presets_example"
+        Will generate both YAML (preferred) and JSON versions
     """
     example_dict = define_presets()
-    # write example_dict to JSON file
-    with Path(filepath).open("w", encoding="utf-8") as file:
-        json.dump(example_dict, file)
+    
+    # Generate YAML example if available (preferred format)
+    if YAML_AVAILABLE:
+        yaml_path = Path(filepath).with_suffix('.yaml')
+        with yaml_path.open("w", encoding="utf-8") as file:
+            yaml.dump(example_dict, file, sort_keys=False, indent=2)
+    
+    # Generate JSON example as fallback
+    json_path = Path(filepath).with_suffix('.json')
+    with json_path.open("w", encoding="utf-8") as file:
+        json.dump(example_dict, file, indent=2)
