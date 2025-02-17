@@ -8,3 +8,6 @@ tests/temp
 poetry.lock
 **/fast_fig_presets.json
 **/fast_fig_presets.yaml
+.python-version
+.venv
+uv.lock

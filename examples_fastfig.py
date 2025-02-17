@@ -98,22 +98,29 @@ fig.suptitle("Simulation result")  # set title for subplot
 fig.show()
 # fig.save("example_pcolor.png")  # save figure to png and pdf  # noqa: ERA001
 
+# %% Create thumbnail
+
+fig = FFig()
+fig.pcolor(e_gauss)
+fig.set_title("Profile")
+fig.set_ylabel("Y-Axis")
+fig.save("fastfig_thumbnail.png")
+
 # %% DataFrame example
 # Create sample DataFrame
-dates = pd.date_range('2024-01-01', periods=10)
-df = pd.DataFrame({
-    'A': np.random.randn(10),
-    'B': np.random.randn(10) + 2,
-    'C': np.random.randn(10) - 2
-}, index=dates)
+dates = pd.date_range("2024-01-01", periods=10)
+df = pd.DataFrame(
+    {"A": np.random.randn(10), "B": np.random.randn(10) + 2, "C": np.random.randn(10) - 2},
+    index=dates,
+)
 
 # Plot DataFrame columns
-fig = FFig('l')
+fig = FFig("l")
 fig.plot(df)
 fig.legend()
-fig.set_xlabel('Date')
-fig.set_ylabel('Value')
-fig.set_title('DataFrame Column Values Over Time')
+fig.set_xlabel("Date")
+fig.set_ylabel("Value")
+fig.set_title("DataFrame Column Values Over Time")
 fig.show()
 
 # %% Example for custom preset with YAML file
@@ -123,14 +130,44 @@ import fast_fig
 fast_fig.presets.generate_file(filepath="custom_preset.yaml")
 
 # Use the custom preset
-fig = FFig(presets='custom_preset.yaml')
+fig = FFig(presets="custom_preset.yaml")
 x = np.linspace(0, 10, 100)
-fig.plot(x, np.sin(x), label='sin(x)')
-fig.plot(x, np.cos(x), label='cos(x)')
-fig.set_xlabel('x')
-fig.set_ylabel('y')
-fig.set_title('Publication-Ready Plot')
+fig.plot(x, np.sin(x), label="sin(x)")
+fig.plot(x, np.cos(x), label="cos(x)")
+fig.set_xlabel("x")
+fig.set_ylabel("y")
+fig.set_title("Publication-Ready Plot")
 fig.legend()
 fig.grid()
 fig.show()
 # fig.save('publication_plot.png')  # Will save with high DPI and tight layout
+
+# %% Beautiful visualization example
+
+# Create a complex 2D function (a combination of Gaussian peaks)
+x = np.linspace(-4, 4, 200)
+y = np.linspace(-4, 4, 200)
+X, Y = np.meshgrid(x, y)
+Z = (2 * np.exp(-((X - 1)**2 + (Y - 1)**2) / 2.0) + 
+     1.5 * np.exp(-((X + 1)**2 + (Y + 1)**2) / 0.8) +
+     np.exp(-((X - 2)**2 + (Y + 2)**2) / 0.3))
+
+# Create visualization
+fig = FFig('square')  # Use square template
+# Create heatmap with custom colormap
+fig.pcolor(X,Y,Z, cmap='magma', vmin=0)
+# Add contour lines with custom styling
+fig.contour(X,Y,Z, levels=8, colors='white', alpha=0.3, linewidths=0.8)
+# Add specific contours with different style
+fig.contour(X,Y,Z, levels=[0.7], colors='cyan', alpha=0.8, linewidths=2, linestyles='--')
+
+# Customize the plot
+fig.set_title('Gaussian Peaks Landscape')
+fig.set_xlabel('X Position in mm')
+fig.set_ylabel('Y Position in mm')
+
+# Show the result
+fig.show()
+# fig.save('gaussian_landscape.png', dpi=300)  # Save in high resolution
+
+

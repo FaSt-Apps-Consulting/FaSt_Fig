@@ -160,9 +160,16 @@ The preset system also includes color sequences and line styles that cycle autom
 - Default colors: blue, red, green, orange
 - Default line styles: solid (-), dashed (--), dotted (:), dash-dot (-.)
 
-## Final words
+## Contributing
 
-Written by Fabian Stutzki, fast@fast-apps.de
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Licensed under MIT
+## License
 
+Licensed under MIT License. See [LICENSE](LICENSE) for details.
+
+## Author
+
+Written by Fabian Stutzki (fast@fast-apps.de)
+
+For more information, visit [https://www.fast-apps.de](https://www.fast-apps.de)
