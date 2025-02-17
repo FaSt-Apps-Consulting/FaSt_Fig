@@ -127,10 +127,10 @@ fig.show()
 # Create a custom preset configuration
 import fast_fig
 
-fast_fig.presets.generate_file(filepath="custom_preset.yaml")
+fast_fig.presets.generate_file(filepath="example_preset.yaml")
 
 # Use the custom preset
-fig = FFig(presets="custom_preset.yaml")
+fig = FFig(presets="example_preset.yaml")
 x = np.linspace(0, 10, 100)
 fig.plot(x, np.sin(x), label="sin(x)")
 fig.plot(x, np.cos(x), label="cos(x)")
