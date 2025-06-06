@@ -148,26 +148,26 @@ fig.show()
 x = np.linspace(-4, 4, 200)
 y = np.linspace(-4, 4, 200)
 X, Y = np.meshgrid(x, y)
-Z = (2 * np.exp(-((X - 1)**2 + (Y - 1)**2) / 2.0) + 
-     1.5 * np.exp(-((X + 1)**2 + (Y + 1)**2) / 0.8) +
-     np.exp(-((X - 2)**2 + (Y + 2)**2) / 0.3))
+Z = (
+    2 * np.exp(-((X - 1) ** 2 + (Y - 1) ** 2) / 2.0)
+    + 1.5 * np.exp(-((X + 1) ** 2 + (Y + 1) ** 2) / 0.8)
+    + np.exp(-((X - 2) ** 2 + (Y + 2) ** 2) / 0.3)
+)
 
 # Create visualization
-fig = FFig('square')  # Use square template
+fig = FFig("square")  # Use square template
 # Create heatmap with custom colormap
-fig.pcolor(X,Y,Z, cmap='magma', vmin=0)
+fig.pcolor(X, Y, Z, cmap="magma", vmin=0)
 # Add contour lines with custom styling
-fig.contour(X,Y,Z, levels=8, colors='white', alpha=0.3, linewidths=0.8)
+fig.contour(X, Y, Z, levels=8, colors="white", alpha=0.3, linewidths=0.8)
 # Add specific contours with different style
-fig.contour(X,Y,Z, levels=[0.7], colors='cyan', alpha=0.8, linewidths=2, linestyles='--')
+fig.contour(X, Y, Z, levels=[0.7], colors="cyan", alpha=0.8, linewidths=2, linestyles="--")
 
 # Customize the plot
-fig.set_title('Gaussian Peaks Landscape')
-fig.set_xlabel('X Position in mm')
-fig.set_ylabel('Y Position in mm')
+fig.set_title("Gaussian Peaks Landscape")
+fig.set_xlabel("X Position in mm")
+fig.set_ylabel("Y Position in mm")
 
 # Show the result
 fig.show()
 # fig.save('gaussian_landscape.png', dpi=300)  # Save in high resolution
-
-

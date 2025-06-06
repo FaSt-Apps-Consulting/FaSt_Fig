@@ -1,4 +1,7 @@
-## [0.9] - 2024-07-05
+## [0.6.1] - 2025-06-06
+- Show with default block=False
+
+## [0.6] - 2025-01-26
 - Automatically pass matplotlib methods by __getattr__
 
 ## [0.5.3] - 2024-07-04

@@ -1,0 +1,77 @@
+color_seq:
+- blue
+- red
+- green
+- orange
+linestyle_seq:
+- '-'
+- --
+- ':'
+- -.
+m:
+  width: 15
+  height: 10
+  fontfamily: sans-serif
+  fontsize: 12
+  linewidth: 2
+s:
+  width: 10
+  height: 8
+  fontfamily: sans-serif
+  fontsize: 12
+  linewidth: 2
+l:
+  width: 20
+  height: 15
+  fontfamily: sans-serif
+  fontsize: 12
+  linewidth: 3
+ol:
+  width: 8
+  height: 6
+  fontfamily: serif
+  fontsize: 9
+  linewidth: 1
+oe:
+  width: 12
+  height: 8
+  fontfamily: serif
+  fontsize: 10
+  linewidth: 1
+square:
+  width: 10
+  height: 10
+  fontfamily: serif
+  fontsize: 10
+  linewidth: 1
+colors:
+  blue:
+  - 33
+  - 101
+  - 146
+  red:
+  - 218
+  - 4
+  - 19
+  green:
+  - 70
+  - 173
+  - 52
+  orange:
+  - 235
+  - 149
+  - 0
+  yellow:
+  - 255
+  - 242
+  - 0
+  grey:
+  - 64
+  - 64
+  - 64
+test:
+  width: 10
+  height: 10
+  fontfamily: sans-serif
+  fontsize: 20
+  linewidth: 5

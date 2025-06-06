@@ -976,14 +976,14 @@ class FFig:
         else:
             raise FileNotFoundError(f"Watermark image not found: {img_path}")
 
-    def show(self: FFig) -> None:
+    def show(self: FFig, block=False) -> None:
         """Show figure in interactive console.
         
         Displays the figure in the current backend's interactive window.
         Automatically calls set_parameters() before showing.
         """
         self.set_parameters()
-        plt.show()
+        plt.show(block=block)
 
     def save(
         self: FFig,
