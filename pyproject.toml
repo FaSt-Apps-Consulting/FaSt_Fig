@@ -22,12 +22,6 @@ dependencies = [
     "pathlib>=1.0.0",
 ]
 
-[project.optional-dependencies]
-test = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-]
-
 [tool.ruff]
 line-length = 100
 
@@ -38,3 +32,12 @@ ignore = [
     "D213",  # Ignore 'multi-line-summary-second-line' in favor of D212
     "COM812",  # Ignore to avoid conflicts with the formatter
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-cov>=6.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
