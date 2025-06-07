@@ -6,10 +6,9 @@ authors = [
     {name = "Fabian Stutzki", email = "fast@fast-apps.de"}
 ]
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 keywords = ["matplotlib", "figure"]
