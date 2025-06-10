@@ -40,21 +40,22 @@ __version__ = "0.5.5"
 
 import logging
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-from matplotlib.collections import PathCollection, PolyCollection, QuadMesh
-from matplotlib.colorbar import Colorbar
-from matplotlib.contour import QuadContourSet
-from matplotlib.lines import Line2D
 import numpy as np
 from cycler import cycler
 from packaging import version
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
     import pandas as pd
+    from matplotlib.lines import Line2D
+
+
+from typing_extensions import Self
 
 from . import presets
 
@@ -80,27 +81,34 @@ class FFig:
     @author: fstutzki
     """
 
-    def __enter__(self) -> FFig:
+    def __enter__(self) -> Self:
         """Enter the context manager.
-        
+
         Returns
         -------
         FFig
             The figure instance
+
         """
         return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: type[BaseException] | None) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Exit the context manager and close the figure.
-        
+
         Parameters
         ----------
         exc_type : type[BaseException] | None
             The type of the exception that was raised
         exc_val : BaseException | None
             The instance of the exception that was raised
-        exc_tb : type[BaseException] | None
+        exc_tb : TracebackType | None
             The traceback of the exception that was raised
+
         """
         self.close()
 
@@ -155,6 +163,7 @@ class FFig:
         >>> fig = FFig()  # Default medium template
         >>> fig = FFig("l", nrows=2, sharex=True)  # Large template, 2 rows sharing x-axis
         >>> fig = FFig("s", presets="my_presets.json")  # Small template with custom presets
+
         """
         # Enable logger
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -260,20 +269,30 @@ class FFig:
 
     def subplot(  # noqa: PLR0913
         self: FFig,
+        *args: int,
         nrows: int | None = None,
         ncols: int | None = None,
         index: int | None = None,
-        *,  # following arguments are keyword only
         vspace: float | None = None,
         hspace: float | None = None,
-        sharex: bool| str = False,
-        sharey: bool| str = False,
+        sharex: bool | str = False,
+        sharey: bool | str = False,
     ) -> None:
         """Set current axis/subplot.
 
         fig.subplot(0) # for first subplot
         fig.subplot() # for next subplot
         """
+        if len(args) == 1:
+            index = args[0]
+        elif len(args) == 2:  # noqa: PLR2004
+            nrows, ncols = args
+        elif len(args) == 3:  # noqa: PLR2004
+            nrows, ncols, index = args
+        elif len(args) > 3:  # noqa: PLR2004
+            msg = "Invalid arguments for subplot"
+            raise ValueError(msg)
+
         if nrows is not None or ncols is not None:
             # Generate new subplot
             if nrows is None:
@@ -309,40 +328,44 @@ class FFig:
 
     def plot(
         self: FFig,
-        data: list| np.ndarray| 'pd.DataFrame' = MAT_EXAMPLE,
+        data: list | np.ndarray | "pd.DataFrame" = MAT_EXAMPLE,  # noqa: UP037
         *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> list[Line2D]:
         """Generate a line plot.
-        
+
         Parameters
         ----------
         data : array-like or DataFrame
             If array-like: First row is used as x-values for all other rows
             If DataFrame: Index is used as x-values, each column as separate line
-            
+        *args : float | str | bool
+            Additional positional arguments passed to matplotlib's plot function
+            Common usage includes format strings like 'ro' for red circles
+        **kwargs : float | str | bool
+            Additional keyword arguments passed to matplotlib's plot function
+            Common ones include: label, color, linestyle, marker, alpha
+
         Returns
         -------
         list[Line2D]
             List of line objects representing the plotted data
+
         """
         plot_objects = []
-        
+
         try:
             import pandas as pd
+
             is_dataframe = isinstance(data, pd.DataFrame)
         except ImportError:
             is_dataframe = False
-        
+
         if is_dataframe:
             # Plot each column of the DataFrame
             for column in data.columns:
                 lines = self.current_axis.plot(
-                    data.index, 
-                    data[column], 
-                    label=column,
-                    *args, 
-                    **kwargs
+                    data.index, data[column], *args, label=column, **kwargs
                 )
                 plot_objects.extend(lines)
             # Set x-label based on index type
@@ -359,51 +382,57 @@ class FFig:
         else:
             lines = self.current_axis.plot(data, *args, **kwargs)
             plot_objects.extend(lines)
-            
+
         self.handle_plot = plot_objects
         return plot_objects
 
-    def semilogx(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> list[Line2D]:
+    def semilogx(
+        self: FFig, *args: float | str | bool, **kwargs: float | str | bool
+    ) -> list[Line2D]:
         """Create a plot with logarithmic x-axis scaling.
-        
+
         Parameters
         ----------
         *args : float | str | bool
             Arguments passed to plot()
         **kwargs : float | str | bool
             Keyword arguments passed to plot()
-            
+
         Returns
         -------
         list[Line2D]
             List of line objects representing the plotted data
-            
+
         Example
         -------
         >>> fig.semilogx([1, 10, 100], [1, 2, 3])
+
         """
         lines = self.plot(*args, **kwargs)
         self.xscale("log")
         return lines
 
-    def semilogy(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> list[Line2D]:
+    def semilogy(
+        self: FFig, *args: float | str | bool, **kwargs: float | str | bool
+    ) -> list[Line2D]:
         """Create a plot with logarithmic y-axis scaling.
-        
+
         Parameters
         ----------
         *args : float | str | bool
             Arguments passed to plot()
         **kwargs : float | str | bool
             Keyword arguments passed to plot()
-            
+
         Returns
         -------
         list[Line2D]
             List of line objects representing the plotted data
-            
+
         Example
         -------
         >>> fig.semilogy([1, 2, 3], [1, 10, 100])
+
         """
         lines = self.plot(*args, **kwargs)
         self.yscale("log")
@@ -418,7 +447,7 @@ class FFig:
         **kwargs: float | str | bool,
     ) -> mpl.collections.PolyCollection:
         """Fill the area between two curves.
-        
+
         Parameters
         ----------
         *args : float | str | bool
@@ -435,54 +464,56 @@ class FFig:
             Width of the boundary line, by default 0
         **kwargs : float | str | bool
             Additional keyword arguments passed to fill_between
-            
+
         Returns
         -------
         mpl.collections.PolyCollection
             The filled area
-            
+
         Example
         -------
         >>> x = np.linspace(0, 2, 100)
         >>> y1 = np.sin(2*np.pi*x)
         >>> y2 = np.sin(2*np.pi*x) + 0.2
         >>> fig.fill_between(x, y1, y2, alpha=0.3)
+
         """
         if color is None:
             color = self.last_color()
-        fill = self.current_axis.fill_between(
+        return self.current_axis.fill_between(
             *args,
             color=color,
             alpha=alpha,
             linewidth=linewidth,
             **kwargs,
         )
-        return fill
 
     def last_color(self) -> np.ndarray:
         """Return last color code used by plot.
-        
+
         Returns
         -------
         np.ndarray
             RGB color array
-            
+
         Raises
         ------
         ValueError
             If no plot exists yet
+
         """
         if self.handle_plot is None or len(self.handle_plot) == 0:
-            raise ValueError("No plot exists yet to get color from")
+            msg = "No plot exists yet to get color from"
+            raise ValueError(msg)
         return self.handle_plot[0].get_color()
 
     def pcolor(
-        self: FFig, 
-        *args: float | str | bool, 
+        self: FFig,
+        *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> mpl.collections.QuadMesh:
         """Create a pseudocolor plot of a 2D array.
-        
+
         Parameters
         ----------
         *args : float | str | bool
@@ -499,18 +530,19 @@ class FFig:
                 Minimum and maximum values for colormap scaling
             - shading : {'flat', 'nearest', 'gouraud'}, optional
                 How to shade the colormap
-            
+
         Returns
         -------
         mpl.collections.QuadMesh
             The pseudocolor plot
-            
+
         Example
         -------
         >>> x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
         >>> z = np.exp(-(x**2 + y**2))
         >>> fig.pcolor(z)
         >>> fig.colorbar()  # Add a colorbar
+
         """
         kwargs.setdefault("cmap", "nipy_spectral")
         self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
@@ -524,7 +556,7 @@ class FFig:
         **kwargs: float | str | bool,
     ) -> mpl.collections.QuadMesh:
         """Create a pseudocolor plot with logarithmic color scaling.
-        
+
         Parameters
         ----------
         *args : float | str | bool
@@ -542,18 +574,19 @@ class FFig:
         **kwargs : float | str | bool
             Additional keyword arguments passed to matplotlib's pcolormesh.
             Same as pcolor() with the addition of logarithmic normalization
-            
+
         Returns
         -------
         mpl.collections.QuadMesh
             The pseudocolor plot with logarithmic color scaling
-            
+
         Example
         -------
         >>> x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
         >>> z = np.exp(-(x**2 + y**2)) + 1  # Add 1 to ensure positive values
         >>> fig.pcolor_log(z, vmin=0.1, vmax=2)
         >>> fig.colorbar()
+
         """
         kwargs.setdefault("cmap", "nipy_spectral")
         kwargs_log = {}
@@ -566,17 +599,17 @@ class FFig:
         return self.handle_surface
 
     def pcolor_square(
-        self: FFig, 
-        *args: float | str | bool, 
+        self: FFig,
+        *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> mpl.collections.QuadMesh:
         """Create a square pseudocolor plot with hidden axes.
-        
+
         Similar to pcolor() but creates a plot with:
         - Equal aspect ratio (square)
         - Hidden axes and ticks
         - Default 'nipy_spectral' colormap
-        
+
         Parameters
         ----------
         *args : float | str | bool
@@ -588,17 +621,18 @@ class FFig:
         **kwargs : float | str | bool
             Keyword arguments passed to matplotlib's pcolormesh.
             Same as pcolor() but with hidden axes
-            
+
         Returns
         -------
         mpl.collections.QuadMesh
             The square pseudocolor plot
-            
+
         Example
         -------
         >>> data = np.random.rand(10, 10)  # Create 10x10 random matrix
         >>> fig.pcolor_square(data)  # Plot as square with hidden axes
         >>> fig.colorbar()  # Optionally add a colorbar
+
         """
         kwargs.setdefault("cmap", "nipy_spectral")
         self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
@@ -609,12 +643,12 @@ class FFig:
         return self.handle_surface
 
     def contour(
-        self: FFig, 
-        *args: float | str | bool, 
+        self: FFig,
+        *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> mpl.contour.QuadContourSet:
         """Create a 2D contour plot.
-        
+
         Parameters
         ----------
         *args : float | str | bool
@@ -628,28 +662,29 @@ class FFig:
             - colors : color string or sequence of colors
             - alpha : float
             - linestyles : string or tuple
-            
+
         Returns
         -------
         mpl.contour.QuadContourSet
             The contour plot object
-            
+
         Example
         -------
         >>> x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
         >>> z = np.exp(-(x**2 + y**2))
         >>> fig.contour(z, levels=[0.2, 0.5, 0.8], colors='black')
+
         """
         self.handle_surface = self.current_axis.contour(*args, **kwargs)
         return self.handle_surface
 
     def scatter(
-        self: FFig, 
-        *args: float | str | bool, 
+        self: FFig,
+        *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> mpl.collections.PathCollection:
         """Create a scatter plot.
-        
+
         Parameters
         ----------
         *args : float | str | bool
@@ -670,29 +705,30 @@ class FFig:
                 A colormap for coloring the markers
             - label : str
                 Label for the legend
-            
+
         Returns
         -------
         mpl.collections.PathCollection
             The scatter plot collection
-            
+
         Example
         -------
         >>> x = np.random.rand(50)
         >>> y = np.random.rand(50)
         >>> colors = np.random.rand(50)
         >>> fig.scatter(x, y, c=colors, s=500*colors, alpha=0.5, cmap='viridis')
+
         """
         self.handle_surface = self.current_axis.scatter(*args, **kwargs)
         return self.handle_surface
 
     def colorbar(
-        self: FFig, 
-        *args: float | str | bool, 
+        self: FFig,
+        *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> mpl.colorbar.Colorbar:
         """Add a colorbar to the current plot.
-        
+
         Parameters
         ----------
         *args : float | str | bool
@@ -703,16 +739,17 @@ class FFig:
                 Label for the colorbar
             - orientation : {'vertical', 'horizontal'}
                 Colorbar orientation
-            
+
         Returns
         -------
         mpl.colorbar.Colorbar
             The colorbar object
-            
+
         Example
         -------
         >>> fig.pcolor(data)
         >>> fig.colorbar(label='Values')
+
         """
         return self.handle_fig.colorbar(*args, self.handle_surface, ax=self.current_axis, **kwargs)
 
@@ -724,7 +761,7 @@ class FFig:
         **kwargs: int | str | bool,
     ) -> None:
         """Add a grid to the current plot.
-        
+
         Parameters
         ----------
         *args : int | str
@@ -741,11 +778,12 @@ class FFig:
                 The axis to apply the grid to
             - linestyle : str
                 The line style of the grid
-            
+
         Example
         -------
         >>> fig.plot(data)
         >>> fig.grid(alpha=0.3, linestyle='--')
+
         """
         self.current_axis.grid(*args, color=color, alpha=alpha, **kwargs)
 
@@ -767,6 +805,7 @@ class FFig:
         >>> fig.set_xlim(0, 1)  # set limits to 0 and 1
         >>> fig.set_xlim([0, 1])  # same as above
         >>> fig.set_xlim()  # auto-set to data min and max
+
         """
         try:
             if np.size(xmin) == 2:  # noqa: PLR2004
@@ -787,8 +826,8 @@ class FFig:
                     self.current_axis.set_xlim(xmin=xmin)
                 if np.isfinite(xmax):
                     self.current_axis.set_xlim(xmax=xmax)
-        except (ValueError, TypeError) as e:
-            self.logger.exception(f"Error setting x limits: {str(e)}")
+        except (ValueError, TypeError):
+            self.logger.exception("Error setting x limits")
 
     def set_ylim(self: FFig, ymin: float | list[float] = np.inf, ymax: float = -np.inf) -> None:
         """Set limits for current y-axis.
@@ -808,6 +847,7 @@ class FFig:
         >>> fig.set_ylim(0, 1)  # set limits to 0 and 1
         >>> fig.set_ylim([0, 1])  # same as above
         >>> fig.set_ylim()  # auto-set to data min and max
+
         """
         try:
             if np.size(ymin) == 2:  # noqa: PLR2004
@@ -828,8 +868,8 @@ class FFig:
                     self.current_axis.set_ylim(ymin=ymin)
                 if np.isfinite(ymax):
                     self.current_axis.set_ylim(ymax=ymax)
-        except (ValueError, TypeError) as e:
-            self.logger.exception(f"Error setting y limits: {str(e)}")
+        except (ValueError, TypeError):
+            self.logger.exception("Error setting y limits")
 
     def legend(
         self: FFig,
@@ -838,16 +878,17 @@ class FFig:
         **kwargs: float | str | bool,
     ) -> None:
         """Insert legend based on labels given in plot(x,y,label='Test1') etc.
-        
+
         Parameters
         ----------
         *args : float | str | bool
             Arguments passed to matplotlib's legend
         labels : str | list[str] | None, optional
-            Labels to assign to the lines in the plot. If provided, 
+            Labels to assign to the lines in the plot. If provided,
             overwrites existing labels, by default None
         **kwargs : float | str | bool
             Keyword arguments passed to matplotlib's legend
+
         """
         if labels is not None:
             for ilabel, iline in enumerate(self.current_axis.lines):
@@ -858,24 +899,26 @@ class FFig:
 
     def legend_entries(self) -> tuple[list[Line2D], list[str]]:
         """Return handle and labels of legend.
-        
+
         Returns
         -------
         tuple[list[Line2D], list[str]]
             Tuple containing:
             - List of Line2D objects representing plot handles
             - List of strings representing labels
+
         """
         handles, labels = self.current_axis.get_legend_handles_labels()
         return handles, labels
 
     def legend_count(self) -> int:
         """Return number of legend entries.
-        
+
         Returns
         -------
         int
             Number of entries in the legend
+
         """
         handles, _ = self.current_axis.get_legend_handles_labels()
         return np.size(handles)
@@ -887,7 +930,7 @@ class FFig:
         linestyle_seq: list[str],
     ) -> None:
         """Set cycle for colors and linestyles (will be used in this order).
-        
+
         Parameters
         ----------
         colors : dict[str, list[int]]
@@ -896,11 +939,12 @@ class FFig:
             Sequence of color names to use from the colors dictionary
         linestyle_seq : list[str]
             Sequence of line styles to use (e.g., ['-', '--', ':', '-.'])
-            
+
         Example
         -------
         >>> colors = {'blue': [33, 101, 146], 'red': [218, 4, 19]}
         >>> fig.set_cycle(colors, ['blue', 'red'], ['-', '--'])
+
         """
         # generate cycle from color_seq and linestyle_seq
         color_list = [colors[icolor] for icolor in color_seq if icolor in colors]
@@ -916,18 +960,19 @@ class FFig:
 
     def set_parameters(self: FFig) -> None:
         """Set figure parameters for optimal layout.
-        
+
         This function is called automatically by save() and show().
         It performs the following:
         - Applies tight_layout() to optimize spacing
         - Adjusts subplot spacing if specified during creation
-        
+
         Notes
         -----
         If tight_layout fails, it will be logged but won't raise an error.
         Subplot spacing is only adjusted if:
         - hspace was specified and there are multiple rows
         - vspace was specified and there are multiple columns
+
         """
         try:
             self.handle_fig.tight_layout()
@@ -949,7 +994,7 @@ class FFig:
         **kwargs: float | str | bool,
     ) -> None:
         """Include watermark image to plot.
-        
+
         Parameters
         ----------
         img : str | Path
@@ -964,21 +1009,23 @@ class FFig:
             Z-order of watermark
         **kwargs : float | str | bool
             Additional keyword arguments passed to figimage
-            
+
         Raises
         ------
         FileNotFoundError
             If image file does not exist
+
         """
         img_path = Path(img)
         if img_path.is_file():
             self.handle_fig.figimage(img_path, xpos, ypos, alpha=alpha, zorder=zorder, **kwargs)
         else:
-            raise FileNotFoundError(f"Watermark image not found: {img_path}")
+            msg = f"Watermark image not found: {img_path}"
+            raise FileNotFoundError(msg)
 
-    def show(self: FFig, block=False) -> None:
+    def show(self: FFig, *, block: bool = False) -> None:
         """Show figure in interactive console.
-        
+
         Displays the figure in the current backend's interactive window.
         Automatically calls set_parameters() before showing.
         """
@@ -1021,20 +1068,21 @@ class FFig:
         >>> fig.save('plot.png', 'pdf')  # Save as both PNG and PDF
         >>> fig.save('plot', '.png', '.pdf', '.svg')  # Save in multiple formats
         >>> paths = fig.save('plot.png')  # Get saved paths
+
         """
         kwargs.setdefault("dpi", 300)  # Default to 300 dpi
         saved_files = []
 
         filepath = Path(filename)
         format_set = set()
-        
+
         if filepath.suffix == "":
             msg = f"FFig: Filepath {filepath} has no suffix, defaulting to .png!"
             self.logger.warning(msg)
             format_set.add(".png")
         else:
             format_set.add(filepath.suffix)
-            
+
         for iarg in args:
             if isinstance(iarg, int):
                 kwargs["dpi"] = iarg
@@ -1055,73 +1103,77 @@ class FFig:
             except (FileNotFoundError, PermissionError, OSError):
                 except_message = f"save(): Figure cannot be saved to {ifilepath}"
                 self.logger.exception(except_message)
-                
+
         if self.figure_show:
             plt.show()  # block=False)
         else:
             plt.draw()
-            
+
         return saved_files
-    
+
     def clear(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> bool:
         """Clear figure content to reuse the figure.
-        
+
         Clears all plots and axes but maintains the figure object,
         allowing it to be reused for new plots.
-        
+
         Parameters
         ----------
         *args : float | str | bool
             Arguments passed to matplotlib's clf()
         **kwargs : float | str | bool
             Keyword arguments passed to matplotlib's clf()
-            
+
         Returns
         -------
         bool
             True if clearing was successful, False otherwise
-            
+
         Example
         -------
         >>> fig.plot(data1)
         >>> fig.clear()  # Clear for reuse
         >>> fig.plot(data2)  # Plot new data
+
         """
         try:
             self.handle_fig.clf(*args, **kwargs)
-            return True
-        except (ValueError, TypeError, AttributeError) as e:
-            self.logger.exception(f"Error clearing figure: {str(e)}")
+        except (ValueError, TypeError, AttributeError):
+            self.logger.exception("Error clearing figure")
             return False
+        else:
+            return True
 
     def close(self: FFig) -> bool:
         """Close the figure and clean up resources.
-        
+
         Closes the figure window and cleans up memory resources.
         After closing, the figure cannot be reused - create a new figure instead.
-        
-        Returns
+
+        Returns:
         -------
         bool
             True if closing was successful, False otherwise
-            
-        Notes
+
+        Notes:
         -----
         - Use clear() instead if you want to reuse the figure
         - This method is automatically called when using the context manager
-        
-        Example
+
+        Example:
         -------
         >>> fig.plot(data)
         >>> fig.save('plot.png')
         >>> fig.close()  # Clean up when done
+
         """
         try:
             plt.close(self.handle_fig)
-            return True
-        except (ValueError, TypeError, AttributeError) as e:
-            self.logger.exception(f"Error closing figure: {str(e)}")
+        except (ValueError, TypeError, AttributeError):
+            self.logger.exception("Error closing figure")
             return False
+        else:
+            return True
 
 
 # %%

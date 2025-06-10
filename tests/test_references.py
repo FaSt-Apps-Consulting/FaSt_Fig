@@ -1,10 +1,10 @@
 """Verify matching reference for FaSt_Fig."""
 
 # %%
+from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 from PIL import Image
@@ -18,7 +18,7 @@ REFERENCE_PATH = Path("tests/references")
 
 
 # %%
-def calc_checksum(file_path: Union[str, Path]) -> str:
+def calc_checksum(file_path: str | Path) -> str:
     """Calculate the checksum of a file."""
     hasher = hashlib.sha256()
     image = Image.open(file_path)
@@ -60,11 +60,11 @@ def test_subplot6(tmpdir: str, test_name: str = "test_subplot6.png") -> None:
     fig.plot([1, 2, 3, 1, 2, 3, 4, 1, 1])
     fig.set_title("Plot 2")
     fig.next_axis()
-    assert fig.subplot_index == 2, "Current axe number should be 2"  # noqa: PLR2004
+    assert fig.subplot_index == 2, "Current axe number should be 2"
     fig.plot([1, 2, 3, 1, 2, 3, 4])
     fig.set_title("Plot 3")
     fig.set_current_axis(5)
-    assert fig.subplot_index == 5, "Current axe number should be 5"  # noqa: PLR2004
+    assert fig.subplot_index == 5, "Current axe number should be 5"
     fig.plot([2, 3, 4, 1, 1])
     fig.set_title("Plot 6")
     fig.save(test_file)
@@ -114,15 +114,13 @@ def test_subplot2x2(tmpdir: str, test_name: str = "test_subplot2x2.png") -> None
     fig = FFig("l", show=SHOW)
     fig.subplot(2, 2, sharex=True)
     fig.pcolor(test_data)
-    # fig.colorbar()
+
     fig.next_axis()
     assert fig.subplot_index == 1, "Current axe number should be 1"
     fig.scatter(test_data, test_data)
-    # fig.colorbar()
     fig.set_current_axis(3)  # jump to last subplot
-    assert fig.subplot_index == 3, "Current axe number should be 3"  # noqa: PLR2004
+    assert fig.subplot_index == 3, "Current axe number should be 3"
     fig.plot(test_data)
-    # fig.colorbar()
     fig.save(test_file)
     fig.close()
     assert test_file.is_file(), "File not created!"
@@ -191,7 +189,7 @@ def test_legend(tmpdir: str, test_name: str = "test_legend.png") -> None:
     fig.plot([1, 2, 3, 4, 5, 6], [0.1, 0.2, 0.4, 0.5, 0.2, 0.1], label="Test")
     fig.legend()
     fig.grid()
-    assert fig.legend_count() == 2, "Legend count should be 2"  # noqa: PLR2004
+    assert fig.legend_count() == 2, "Legend count should be 2"
     fig.save(test_file)
     fig.close()
     assert test_file.is_file(), "File not created!"

@@ -12,15 +12,17 @@ After installation by `pip install fast_fig` you can start with a very simple ex
 
 ```python
 from fast_fig import FFig
+
+data = np.array([[1,2,3,4,5],[2,4,6,8,10]])
 fig = FFig()
-fig.plot()
+fig.plot(data)
 fig.show()
 ```
 
-You can also start with your own data, change to a large templateand save the figure.
+In the following example, the large template `'l'` is initialized and the figure is saved.
 
 ```python
-data = np.array([[1,2,3,4,5],[2,4,6,8,10]])
+data = np.array([[1,2,3,4,5],[2,4,6,8,10],[1,3,6,7,9]])
 fig = FFig('l')
 fig.plot(data)
 fig.save('test_fig1.png') # save figure
@@ -41,7 +43,7 @@ FaSt_Fig allows for more complex behavior with multiple subplots, legend, grid a
 fig = FFig('l',nrows=2) # create figure with two rows and template 'l'
 fig.plot([1,2,3,1,2,3,4,1,1]) # plot first data set
 fig.title('First data set') # set title for subplot
-fig.subplot() # set focus to next subplot/axis
+fig.next_axis() # set focus to next subplot/axis
 fig.plot([0,1,2,3,4],[0,1,1,2,3],label="random") # plot second data set
 fig.legend() # generate legend
 fig.grid() # show translucent grid to highlight major ticks
@@ -76,7 +78,7 @@ fig.scatter(x, y, c=colors, s=sizes)  # scatter plot with colors and sizes
 
 ## DataFrame Support
 
-FaSt_Fig has built-in support for pandas DataFrames (optional dependency):
+FaSt_Fig has built-in support for pandas DataFrames (as optional dependency):
 
 ```python
 import pandas as pd
@@ -98,7 +100,7 @@ fig.plot(df)  # Each column becomes a line, index is x-axis
 
 FaSt_Fig provides direct access to the underlying matplotlib objects through these handles:
 
-- `fig.current_axis`: The currently active Axes object. Use this for axis-specific operations like setting scales, limits, or adding specialized plots.
+- `fig.current_axis`: The currently active axes object. Use this for axis-specific operations like setting scales, limits, or adding specialized plots.
 ```python
 fig.current_axis.set_yscale('log')  # Set y-axis to logarithmic scale
 ```
@@ -172,4 +174,4 @@ Licensed under MIT License. See [LICENSE](LICENSE) for details.
 
 Written by Fabian Stutzki (fast@fast-apps.de)
 
-For more information, visit [https://www.fast-apps.de](https://www.fast-apps.de)
+For more information, visit [www.fast-apps.de](https://www.fast-apps.de)

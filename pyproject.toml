@@ -33,6 +33,12 @@ ignore = [
     "COM812",  # Ignore to avoid conflicts with the formatter
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "S101",  # Ignore assert statements in tests
+    "PLR2004",  # Ignore magic numbers in tests
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
