@@ -1,33 +1,41 @@
-"""fast_fig simplifies figure handling with mpl.
+"""FFig simplifies handling of matplotlib figures.
 
-Key functions:
-- predefinied templates
-- figure instantiation in a class object
-- simplified handling (e.g. plot with vectors)
+Key features:
+- Predefined templates for consistent styling
+- Figure instantiation in a class object
+- Simplified plotting methods with smart defaults
+- Automatic handling of DataFrames
+- Context manager support for clean resource management
+- Type hints and logging for better development experience
 
+Basic usage:
+```python
 from fast_fig import FFig
-# very simple example
-fig = FFig()
-fig.plot()
-fig.show()
+fig = FFig()  # Create figure with default medium template
+fig.plot([1, 2, 3])  # Simple plotting
+fig.show()  # Display figure
+```
 
-More complex example
-fig = FFig("l", nrows=2, sharex=True)  # create figure with template l=large
-fig.plot([1, 2, 3, 1, 2, 3, 4, 1, 1])  # plot first data set
-fig.title("First data set")  # set title for subplot
-fig.subplot()  # set focus to next subplot/axis
-fig.plot([0, 1, 2, 3, 4], [0, 1, 1, 2, 3], label="random")  # plot second data set
-fig.legend()  # generate legend
-fig.grid()  # show translucent grid to highlight major ticks
-fig.xlabel("Data")  # create xlabel for second axis
-fig.save("fig1.png", "pdf")  # save figure to png and pdf
+Advanced usage:
+```python
+with FFig("l", nrows=2, sharex=True) as fig:  # Large template, 2 rows sharing x-axis
+    fig.plot([1, 2, 3], label="First")  # Plot in first axis/subplot
+    fig.title("First plot")
+    fig.next_axis()  # Switch to second axis/subplot
+    fig.plot([0, 1, 2], [0, 1, 4], label="Second")  # Plot with x,y data
+    fig.legend()  # Add legend
+    fig.grid()  # Add grid
+    fig.xlabel("X values")  # Label x-axis
+    fig.save("plot.png", "pdf")  # Save as PNG and PDF
+```
 
-The following handlers can be used to access all matplotlib functionality:
-- fig.current_axis
-- fig.handle_plot
-- fig.handle_axis
-- fig.handle_fig
+The following handlers provide direct access to matplotlib functionality:
+- fig.current_axis: Current axes instance
+- fig.handle_plot: Current plot instance
+- fig.handle_axis: All axes instances
+- fig.handle_fig: Figure instance
 
+@author: fstutzki
 """
 
 from __future__ import annotations
@@ -278,10 +286,51 @@ class FFig:
         sharex: bool | str = False,
         sharey: bool | str = False,
     ) -> None:
-        """Set current axis/subplot.
+        """Set or create subplot configuration and select current axis.
 
-        fig.subplot(0) # for first subplot
-        fig.subplot() # for next subplot
+        This method can be used in three ways:
+        1. Select an existing subplot by index subplot(2), but you may also use next_axis()
+        2. Create a new subplot grid with subplot(1,3)
+        3. Create a new subplot grid with specific index with subplot(1,3,2)
+
+        Parameters
+        ----------
+        *args : int
+            Positional arguments can be:
+            - Single int: subplot index to select
+            - Two ints: (nrows, ncols) for new grid
+            - Three ints: (nrows, ncols, index) for new grid with selection
+        nrows : int | None, optional
+            Number of rows in subplot grid, by default None
+        ncols : int | None, optional
+            Number of columns in subplot grid, by default None
+        index : int | None, optional
+            Index of subplot to select (0-based), by default None
+        vspace : float | None, optional
+            Vertical space between subplots, by default None
+        hspace : float | None, optional
+            Horizontal space between subplots, by default None
+        sharex : bool | str, optional
+            Share x-axis between subplots, by default False
+            Can be bool or {'none', 'all', 'row', 'col'}
+        sharey : bool | str, optional
+            Share y-axis between subplots, by default False
+            Can be bool or {'none', 'all', 'row', 'col'}
+
+        Examples
+        --------
+        >>> fig.subplot(0)  # Select first subplot
+        >>> fig.subplot()  # Select next subplot
+        >>> fig.subplot(2, 2)  # Create 2x2 grid
+        >>> fig.subplot(2, 2, 1)  # Create 2x2 grid and select index 1
+        >>> fig.subplot(nrows=2, ncols=2, sharex=True)  # 2x2 grid sharing x-axis
+
+        Notes
+        -----
+        - Subplot indices are 0-based and ordered row-wise
+        - Creating a new grid clears the existing figure
+        - When sharing axes, 'all' shares between all subplots,
+          'row' shares within rows, 'col' shares within columns
         """
         if len(args) == 1:
             index = args[0]
@@ -322,7 +371,43 @@ class FFig:
         self.set_current_axis(index=index)
 
     def bar_plot(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
-        """Generate bar plot."""
+        """Create a bar plot.
+
+        Parameters
+        ----------
+        *args : float | str | bool
+            Arguments passed to matplotlib's bar. Common usage:
+            - x : array-like
+                The x coordinates of the bars
+            - height : array-like
+                The height of the bars
+            - width : float or array-like, optional
+                The width(s) of the bars, default 0.8
+        **kwargs : float | str | bool
+            Additional keyword arguments passed to bar. Common ones:
+            - color : color or list of colors
+                The colors of the bars
+            - alpha : float
+                Transparency, between 0 (transparent) and 1 (opaque)
+            - align : {'center', 'edge'}, default 'center'
+                Alignment of the bars to the x coordinates
+            - label : str
+                Label for the legend
+            - bottom : array-like, optional
+                The y coordinates of the bottom edges of the bars
+
+        Returns
+        -------
+        matplotlib.container.BarContainer
+            Container with all the bars and optionally errorbars
+
+        Examples
+        --------
+        >>> fig.bar_plot([1, 2, 3], [4, 5, 6])  # Simple bar plot
+        >>> fig.bar_plot([1, 2, 3], [4, 5, 6], width=0.5, color='red')  # Customized bars
+        >>> fig.bar_plot([1, 2], [4, 5], yerr=[0.5, 0.5])  # With error bars
+        >>> fig.bar_plot([1, 2], [4, 5], bottom=[1, 1])  # Stacked bars
+        """
         self.handle_bar = self.current_axis.bar(*args, **kwargs)
         return self.handle_bar
 
@@ -1028,6 +1113,26 @@ class FFig:
 
         Displays the figure in the current backend's interactive window.
         Automatically calls set_parameters() before showing.
+
+        Parameters
+        ----------
+        block : bool, optional
+            If True, blocks execution until the figure window is closed.
+            If False (default), continues execution immediately.
+
+        Notes
+        -----
+        - When block=False, the figure window remains interactive but may
+          be closed or lose focus when the script continues executing
+        - In Jupyter notebooks, the block parameter has no effect as figures
+          are displayed differently
+        - set_parameters() is called automatically to ensure optimal layout
+
+        Examples
+        --------
+        >>> fig.plot(data)
+        >>> fig.show()  # Non-blocking display
+        >>> fig.show(block=True)  # Block until window closed
         """
         self.set_parameters()
         plt.show(block=block)
