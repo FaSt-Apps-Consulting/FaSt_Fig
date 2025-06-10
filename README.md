@@ -1,59 +1,58 @@
 # FaSt_Fig
 FaSt_Fig is a wrapper for matplotlib that provides a simple interface for fast and easy plotting.
 
-Key functions:
-- figure instantiation in a class object
-- predefinied templates
-- simplified handling (e.g. plot with vectors)
-- save to multiple file formats
+Key features:
+- Predefined templates for consistent styling
+- Figure instantiation in a class object
+- Simplified plotting methods with smart defaults
+- Automatic handling of DataFrames
+- Context manager support for clean resource management
+- Type hints and logging for better development experience
 
-## Usage
-After installation by `pip install fast_fig` you can start with a very simple example:
+## Installation
+
+```bash
+pip install fast_fig
+```
+
+## Basic Usage
 
 ```python
 from fast_fig import FFig
 
+# Simple example
 data = np.array([[1,2,3,4,5],[2,4,6,8,10]])
 fig = FFig()
 fig.plot(data)
 fig.show()
-```
 
-In the following example, the large template `'l'` is initialized and the figure is saved.
-
-```python
-data = np.array([[1,2,3,4,5],[2,4,6,8,10],[1,3,6,7,9]])
+# Use large template and save figure to multiple formats
 fig = FFig('l')
 fig.plot(data)
-fig.save('test_fig1.png') # save figure
+fig.save('plot.png', 'pdf')
 ```
 
-FaSt_Fig can also be used as a context manager, which automatically handles figure cleanup:
+## Context Manager
+
+FaSt_Fig can be used as a context manager for automatic resource cleanup:
 
 ```python
-with FFig('m') as fig:
-    fig.plot(data)
-    fig.save('plot.png')
+with FFig('l', nrows=2, sharex=True) as fig:  # Large template, 2 rows sharing x-axis
+    fig.plot([1, 2, 3], label="First")  # Plot in first axis/subplot
+    fig.title("First plot")
+    fig.next_axis()  # Switch to second axis/subplot
+    fig.plot([0, 1, 2], [0, 1, 4], label="Second")  # Plot with x,y data
+    fig.legend()  # Add legend
+    fig.grid()  # Add grid
+    fig.xlabel("X values")  # Label x-axis
+    fig.save("plot.png", "pdf")  # Save as PNG and PDF
     # Figure automatically closed when exiting the with block
-```
-
-FaSt_Fig allows for more complex behavior with multiple subplots, legend, grid and saving to multiple files at once.
-
-```python
-fig = FFig('l',nrows=2) # create figure with two rows and template 'l'
-fig.plot([1,2,3,1,2,3,4,1,1]) # plot first data set
-fig.title('First data set') # set title for subplot
-fig.next_axis() # set focus to next subplot/axis
-fig.plot([0,1,2,3,4],[0,1,1,2,3],label="random") # plot second data set
-fig.legend() # generate legend
-fig.grid() # show translucent grid to highlight major ticks
-fig.xlabel('Data') # create xlabel for second axis
-fig.save('test_fig2.png','pdf') # save figure to png and pdf
 ```
 
 ## Plot Types
 
-FaSt_Fig supports various plot types beyond basic line plots:
+FaSt_Fig supports all plots of matplotlib.
+The following plots have adjusted settings to improve their use.
 
 ```python
 # Bar plots
@@ -78,49 +77,50 @@ fig.scatter(x, y, c=colors, s=sizes)  # scatter plot with colors and sizes
 
 ## DataFrame Support
 
-FaSt_Fig has built-in support for pandas DataFrames (as optional dependency):
+FaSt_Fig has built-in support for pandas DataFrames:
 
 ```python
 import pandas as pd
 
-# Create a DataFrame
+# Create a DataFrame with datetime index
 df = pd.DataFrame({
     'A': [1, 2, 3, 4],
     'B': [2, 4, 6, 8]
 }, index=pd.date_range('2024-01-01', periods=4))
 
-# Plot DataFrame
 fig = FFig()
-fig.plot(df)  # Each column becomes a line, index is x-axis
-# Column names are used as labels
-# Date index automatically sets x-label to "Date"
+fig.plot(df)  # Automatic handling:
+              # - Each column becomes a line
+              # - Column names become labels
+              # - Index used as x-axis
+              # - Date index sets x-label to "Date"
 ```
 
-## Matplotlib Handles
+## Matplotlib interaction
 
-FaSt_Fig provides direct access to the underlying matplotlib objects through these handles:
+FaSt_Fig provides direct access to matplotlib objects through these handlers:
 
-- `fig.current_axis`: The currently active axes object. Use this for axis-specific operations like setting scales, limits, or adding specialized plots.
+- `fig.current_axis`: Current axes instance for active subplot
 ```python
-fig.current_axis.set_yscale('log')  # Set y-axis to logarithmic scale
+fig.current_axis.set_yscale('log')  # Direct matplotlib axis methods
 ```
 
-- `fig.handle_fig`: The main Figure object. Use this for figure-level operations like adjusting layout or adding subfigures.
+- `fig.handle_fig`: Figure instance for figure-level operations
 ```python
-fig.handle_fig.tight_layout()  # Adjust subplot parameters for better fit
+fig.handle_fig.tight_layout()  # Adjust layout
 ```
 
-- `fig.handle_plot`: List of Line2D objects from the most recent plot. Use this to modify line properties after plotting.
+- `fig.handle_plot`: Current plot instance(s)
 ```python
-fig.handle_plot[0].set_linewidth(2)  # Change line width of first line
+fig.handle_plot[0].set_linewidth(2)  # Modify line properties
 ```
 
-- `fig.handle_axis`: Array of all Axes objects. Use this to access any subplot directly.
+- `fig.handle_axis`: All axes instances for subplot access
 ```python
-fig.handle_axis[0].set_title('First subplot')  # Set title of first subplot
+fig.handle_axis[0].set_title('First subplot')  # Access any subplot
 ```
 
-These handles give you full access to matplotlib's functionality when you need more control than FaSt_Fig's simplified interface provides.
+These handlers provide full access to matplotlib's functionality when needed.
 
 ## Presets
 

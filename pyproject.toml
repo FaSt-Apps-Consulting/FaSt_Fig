@@ -1,6 +1,6 @@
 [project]
 name = "fast_fig"
-version = "0.6.1"
+version = "0.7.0"
 description = "FaSt_Fig is a wrapper for matplotlib with templates."
 authors = [
     {name = "Fabian Stutzki", email = "fast@fast-apps.de"}

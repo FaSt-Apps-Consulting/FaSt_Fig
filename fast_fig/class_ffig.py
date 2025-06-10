@@ -43,7 +43,6 @@ from __future__ import annotations
 # %%
 __author__ = "Fabian Stutzki"
 __email__ = "fast@fast-apps.de"
-__version__ = "0.5.5"
 
 
 import logging
