@@ -4,12 +4,17 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 
 import numpy as np
+import pytest
 from PIL import Image
 
 from fast_fig import FFig
+
+if os.getenv("CI") == "true":  # Skip in GitHub actions
+    pytest.skip("Skipping references tests in CI", allow_module_level=True)
 
 # %%
 
