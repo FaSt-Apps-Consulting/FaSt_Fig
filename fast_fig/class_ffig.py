@@ -6,7 +6,6 @@ Key features:
 - Simplified plotting methods with smart defaults
 - Automatic handling of DataFrames
 - Context manager support for clean resource management
-- Type hints and logging for better development experience
 
 Basic usage:
 ```python
@@ -363,9 +362,7 @@ class FFig:
                 sharex=self.subplot_sharex,
                 sharey=self.subplot_sharey,
             )
-            self.handle_fig.subplots_adjust(
-                wspace=self.subplot_wspace,
-                hspace=self.subplot_hspace)
+            self.handle_fig.subplots_adjust(wspace=self.subplot_wspace, hspace=self.subplot_hspace)
 
         self.set_current_axis(index=index)
 
@@ -412,7 +409,7 @@ class FFig:
 
     def plot(
         self: FFig,
-        data: list | np.ndarray | "pd.DataFrame"| "pd.Series" = MAT_EXAMPLE,  # noqa: UP037
+        data: list | np.ndarray | "pd.DataFrame" | "pd.Series" = MAT_EXAMPLE,  # noqa: UP037
         *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> list[Line2D]:
@@ -462,6 +459,10 @@ class FFig:
                 data = data.T
             for imat in data[1:]:
                 lines = self.current_axis.plot(data[0, :], imat, *args, **kwargs)
+                plot_objects.extend(lines)
+        elif len(args) > 0 and isinstance(args[0], (list, tuple)):
+            for y in args[0]:
+                lines = self.current_axis.plot(data, y, *args[1:], **kwargs)
                 plot_objects.extend(lines)
         else:
             lines = self.current_axis.plot(data, *args, **kwargs)
