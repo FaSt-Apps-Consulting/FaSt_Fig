@@ -1,3 +1,7 @@
+## [0.8.0] - 2025-08-28
+- Improve figure handling without number
+- Plot with list/tuple of vectors
+
 ## [0.6.1] - 2025-06-06
 - Show with default block=False
 
