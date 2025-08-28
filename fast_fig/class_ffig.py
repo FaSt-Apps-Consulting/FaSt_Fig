@@ -6,7 +6,6 @@ Key features:
 - Simplified plotting methods with smart defaults
 - Automatic handling of DataFrames
 - Context manager support for clean resource management
-- Type hints and logging for better development experience
 
 Basic usage:
 ```python
@@ -148,7 +147,7 @@ class FFig:
                 Share y-axis between subplots, by default False
             - show : bool
                 Show figure after saving, by default True
-            - vspace : float | None
+            - wspace : float | None
                 Vertical space between subplots, by default None
             - hspace : float | None
                 Horizontal space between subplots, by default None
@@ -179,7 +178,7 @@ class FFig:
         kwargs.setdefault("sharex", False)
         kwargs.setdefault("sharey", False)
         kwargs.setdefault("show", True)
-        kwargs.setdefault("vspace", None)
+        kwargs.setdefault("wspace", None)
         kwargs.setdefault("hspace", None)
         kwargs.setdefault("presets", None)
 
@@ -226,7 +225,7 @@ class FFig:
             index=kwargs["isubplot"],
             sharex=kwargs["sharex"],
             sharey=kwargs["sharey"],
-            vspace=kwargs["vspace"],
+            wspace=kwargs["wspace"],
             hspace=kwargs["hspace"],
         )
 
@@ -280,7 +279,7 @@ class FFig:
         nrows: int | None = None,
         ncols: int | None = None,
         index: int | None = None,
-        vspace: float | None = None,
+        wspace: float | None = None,
         hspace: float | None = None,
         sharex: bool | str = False,
         sharey: bool | str = False,
@@ -305,7 +304,7 @@ class FFig:
             Number of columns in subplot grid, by default None
         index : int | None, optional
             Index of subplot to select (0-based), by default None
-        vspace : float | None, optional
+        wspace : float | None, optional
             Vertical space between subplots, by default None
         hspace : float | None, optional
             Horizontal space between subplots, by default None
@@ -353,19 +352,17 @@ class FFig:
             self.subplot_ncols = ncols
             self.subplot_sharex = sharex
             self.subplot_sharey = sharey
-            self.subplot_vspace = vspace
+            self.subplot_wspace = wspace
             self.subplot_hspace = hspace
 
             self.handle_fig.clf()
-            self.handle_fig, self.handle_axis = plt.subplots(
+            self.handle_axis = self.handle_fig.subplots(
                 nrows=self.subplot_nrows,
                 ncols=self.subplot_ncols,
-                num=self.handle_fig.number,  # reference to existing figure
                 sharex=self.subplot_sharex,
                 sharey=self.subplot_sharey,
-                vspace=self.subplot_vspace,
-                hspace=self.subplot_hspace,
             )
+            self.handle_fig.subplots_adjust(wspace=self.subplot_wspace, hspace=self.subplot_hspace)
 
         self.set_current_axis(index=index)
 
@@ -412,7 +409,7 @@ class FFig:
 
     def plot(
         self: FFig,
-        data: list | np.ndarray | "pd.DataFrame" = MAT_EXAMPLE,  # noqa: UP037
+        data: list | np.ndarray | "pd.DataFrame" | "pd.Series" = MAT_EXAMPLE,  # noqa: UP037
         *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> list[Line2D]:
@@ -463,6 +460,10 @@ class FFig:
             for imat in data[1:]:
                 lines = self.current_axis.plot(data[0, :], imat, *args, **kwargs)
                 plot_objects.extend(lines)
+        elif len(args) > 0 and isinstance(args[0], (list, tuple)):
+            for y in args[0]:
+                lines = self.current_axis.plot(data, y, *args[1:], **kwargs)
+                plot_objects.extend(lines)
         else:
             lines = self.current_axis.plot(data, *args, **kwargs)
             plot_objects.extend(lines)
@@ -493,7 +494,7 @@ class FFig:
 
         """
         lines = self.plot(*args, **kwargs)
-        self.xscale("log")
+        self.current_axis.set_xscale("log")
         return lines
 
     def semilogy(
@@ -519,7 +520,7 @@ class FFig:
 
         """
         lines = self.plot(*args, **kwargs)
-        self.yscale("log")
+        self.current_axis.set_yscale("log")
         return lines
 
     def fill_between(
@@ -1055,7 +1056,7 @@ class FFig:
         If tight_layout fails, it will be logged but won't raise an error.
         Subplot spacing is only adjusted if:
         - hspace was specified and there are multiple rows
-        - vspace was specified and there are multiple columns
+        - wspace was specified and there are multiple columns
 
         """
         try:
@@ -1065,8 +1066,8 @@ class FFig:
 
         if self.subplot_hspace is not None and self.subplot_nrows > 1:
             self.handle_fig.subplots_adjust(hspace=self.subplot_hspace)
-        if self.subplot_vspace is not None and self.subplot_ncols > 1:
-            self.handle_fig.subplots_adjust(vspace=self.subplot_vspace)
+        if self.subplot_wspace is not None and self.subplot_ncols > 1:
+            self.handle_fig.subplots_adjust(wspace=self.subplot_wspace)
 
     def watermark(
         self: FFig,
@@ -1138,7 +1139,7 @@ class FFig:
 
     def save(
         self: FFig,
-        filename: str | Path,
+        filename: str | Path | None,
         *args: float | str | bool,
         **kwargs: float | str | bool,
     ) -> list[Path]:

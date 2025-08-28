@@ -19,16 +19,18 @@ pip install fast_fig
 
 ```python
 from fast_fig import FFig
+x = [1,2,3,4,5]
+y1 = [2,4,5,6,10]
+y2 = [1,3,2,6,9]
 
-# Simple example
-data = np.array([[1,2,3,4,5],[2,4,6,8,10]])
+# Simple plot example
 fig = FFig()
-fig.plot(data)
+fig.plot(x,y1)
 fig.show()
 
 # Use large template and save figure to multiple formats
 fig = FFig('l')
-fig.plot(data)
+fig.plot(x,y)
 fig.save('plot.png', 'pdf')
 ```
 
@@ -38,13 +40,13 @@ FaSt_Fig can be used as a context manager for automatic resource cleanup:
 
 ```python
 with FFig('l', nrows=2, sharex=True) as fig:  # Large template, 2 rows sharing x-axis
-    fig.plot([1, 2, 3], label="First")  # Plot in first axis/subplot
-    fig.title("First plot")
+    fig.plot([1, 2, 2.5], label="First")  # Plot in first axis/subplot
+    fig.set_title("First plot")
     fig.next_axis()  # Switch to second axis/subplot
     fig.plot([0, 1, 2], [0, 1, 4], label="Second")  # Plot with x,y data
     fig.legend()  # Add legend
     fig.grid()  # Add grid
-    fig.xlabel("X values")  # Label x-axis
+    fig.set_xlabel("X values")  # Label x-axis
     fig.save("plot.png", "pdf")  # Save as PNG and PDF
     # Figure automatically closed when exiting the with block
 ```
@@ -67,9 +69,12 @@ x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
 z = np.exp(-(x**2 + y**2))
 
 fig.pcolor(z)  # pseudocolor plot
-fig.pcolor_log(z)  # pseudocolor with logarithmic color scale
-fig.contour(z, levels=[0.2, 0.5, 0.8])  # contour plot
 fig.colorbar(label='Values')  # add colorbar
+
+
+fig.pcolor_log(z)  # pseudocolor with logarithmic color scale
+
+fig.contour(z, levels=[0.2, 0.5, 0.8])  # contour plot
 
 # Scatter plots
 fig.scatter(x, y, c=colors, s=sizes)  # scatter plot with colors and sizes
@@ -101,26 +106,17 @@ fig.plot(df)  # Automatic handling:
 FaSt_Fig provides direct access to matplotlib objects through these handlers:
 
 - `fig.current_axis`: Current axes instance for active subplot
-```python
-fig.current_axis.set_yscale('log')  # Direct matplotlib axis methods
-```
-
 - `fig.handle_fig`: Figure instance for figure-level operations
-```python
-fig.handle_fig.tight_layout()  # Adjust layout
-```
-
 - `fig.handle_plot`: Current plot instance(s)
-```python
-fig.handle_plot[0].set_linewidth(2)  # Modify line properties
-```
-
 - `fig.handle_axis`: All axes instances for subplot access
 ```python
+fig.current_axis.set_yscale('log')  # Direct matplotlib axis methods
+fig.handle_fig.tight_layout()  # Adjust layout
+fig.handle_plot[0].set_linewidth(2)  # Modify line properties
 fig.handle_axis[0].set_title('First subplot')  # Access any subplot
 ```
 
-These handlers provide full access to matplotlib's functionality when needed.
+These handles provide full access to matplotlib's functionality when needed.
 
 ## Presets
 

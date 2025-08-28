@@ -1,6 +1,6 @@
 [project]
 name = "fast_fig"
-version = "0.7.0"
+version = "0.8.0"
 description = "FaSt_Fig is a wrapper for matplotlib with templates."
 authors = [
     {name = "Fabian Stutzki", email = "fast@fast-apps.de"}
@@ -20,6 +20,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "logging>=0.4.0",
     "pathlib>=1.0.0",
+    "typing-extensions>=4.0.0",
 ]
 
 [tool.ruff]

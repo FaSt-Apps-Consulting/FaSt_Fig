@@ -48,7 +48,6 @@ def test_plot_1d() -> None:
 
 def test_plot_mat() -> None:
     """Test plot of matrix."""
-    fig = FFig(show=SHOW)
     mat = np.array(
         [
             [1, 2, 3, 4, 5],
@@ -57,10 +56,44 @@ def test_plot_mat() -> None:
             1.5 * RNG.standard_normal(5),
         ],
     )
-    fig.plot(mat)
-    assert len(fig.current_axis._children) == 3, (  # noqa: SLF001
-        "Plot with matrix shape (4, 8) should generate three lines!"
-    )
+    with FFig(show=SHOW) as fig:
+        fig.plot(mat)
+        assert len(fig.current_axis._children) == 3, (  # noqa: SLF001
+            "Plot with matrix shape (4, 8) should generate three lines!"
+        )
+
+
+def test_plot_list() -> None:
+    """Test plot of a list."""
+    with FFig("l", 2, 1, show=SHOW) as fig:
+        fig.plot([1, 2, 3], [[1, 1, 3], [1, 2, 1]])
+        assert len(fig.current_axis._children) == 2, (
+            "Simple plot with list should generate two lines!"
+        )  # noqa: SLF001
+
+
+def test_plot_list_arg() -> None:
+    """Test plot of a list."""
+    with FFig("l", 2, 1, show=SHOW) as fig:
+        fig.plot([1, 2, 3], [[1, 1, 3], [1, 2, 1]], "--")
+        assert len(fig.current_axis._children) == 2, (
+            "Simple plot with list should generate two lines!"
+        )  # noqa: SLF001
+
+
+def test_semilogx() -> None:
+    """Test plot with logarithmic x-axis."""
+    fig = FFig(show=SHOW)
+    fig.semilogx(RNG.standard_normal(5))
+    assert len(fig.current_axis._children) == 1, "Plot with one vector should generate one line!"  # noqa: SLF001
+    fig.close()
+
+
+def test_semilogx() -> None:
+    """Test plot with logarithmic y-axis."""
+    fig = FFig(show=SHOW)
+    fig.semilogx(RNG.standard_normal(5))
+    assert len(fig.current_axis._children) == 1, "Plot with one vector should generate one line!"  # noqa: SLF001
     fig.close()
 
 
