@@ -66,14 +66,23 @@ def test_plot_mat() -> None:
 def test_plot_list() -> None:
     """Test plot of a list."""
     with FFig("l", 2, 1, show=SHOW) as fig:
+        fig.plot([1, 2, 3], [1, 1, 3])
+        assert len(fig.current_axis._children) == 1, (
+            "Simple plot with list should generate one line!"
+        )  # noqa: SLF001
+
+
+def test_plot_lol() -> None:
+    """Test plot of a list of lists."""
+    with FFig("l", 2, 1, show=SHOW) as fig:
         fig.plot([1, 2, 3], [[1, 1, 3], [1, 2, 1]])
         assert len(fig.current_axis._children) == 2, (
             "Simple plot with list should generate two lines!"
         )  # noqa: SLF001
 
 
-def test_plot_list_arg() -> None:
-    """Test plot of a list."""
+def test_plot_lol_arg() -> None:
+    """Test plot of a list of lists with additional argument."""
     with FFig("l", 2, 1, show=SHOW) as fig:
         fig.plot([1, 2, 3], [[1, 1, 3], [1, 2, 1]], "--")
         assert len(fig.current_axis._children) == 2, (

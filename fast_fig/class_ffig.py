@@ -460,7 +460,11 @@ class FFig:
             for imat in data[1:]:
                 lines = self.current_axis.plot(data[0, :], imat, *args, **kwargs)
                 plot_objects.extend(lines)
-        elif len(args) > 0 and isinstance(args[0], (list, tuple)):
+        elif (
+            len(args) > 0
+            and isinstance(args[0], (list, tuple))
+            and all(np.shape(entry) == np.shape(data) for entry in args[0])
+        ):
             for y in args[0]:
                 lines = self.current_axis.plot(data, y, *args[1:], **kwargs)
                 plot_objects.extend(lines)
