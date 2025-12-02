@@ -67,43 +67,45 @@ def test_plot_list() -> None:
     """Test plot of a list."""
     with FFig("l", 2, 1, show=SHOW) as fig:
         fig.plot([1, 2, 3], [1, 1, 3])
-        assert len(fig.current_axis._children) == 1, (
+        assert len(fig.current_axis._children) == 1, (  # noqa: SLF001
             "Simple plot with list should generate one line!"
-        )  # noqa: SLF001
+        )
 
 
 def test_plot_lol() -> None:
     """Test plot of a list of lists."""
     with FFig("l", 2, 1, show=SHOW) as fig:
         fig.plot([1, 2, 3], [[1, 1, 3], [1, 2, 1]])
-        assert len(fig.current_axis._children) == 2, (
+        assert len(fig.current_axis._children) == 2, (  # noqa: SLF001
             "Simple plot with list should generate two lines!"
-        )  # noqa: SLF001
+        )
 
 
 def test_plot_lol_arg() -> None:
     """Test plot of a list of lists with additional argument."""
     with FFig("l", 2, 1, show=SHOW) as fig:
         fig.plot([1, 2, 3], [[1, 1, 3], [1, 2, 1]], "--")
-        assert len(fig.current_axis._children) == 2, (
+        assert len(fig.current_axis._children) == 2, (  # noqa: SLF001
             "Simple plot with list should generate two lines!"
-        )  # noqa: SLF001
+        )
 
 
 def test_semilogx() -> None:
     """Test plot with logarithmic x-axis."""
-    fig = FFig(show=SHOW)
-    fig.semilogx(RNG.standard_normal(5))
-    assert len(fig.current_axis._children) == 1, "Plot with one vector should generate one line!"  # noqa: SLF001
-    fig.close()
+    with FFig(show=SHOW) as fig:
+        fig.semilogx(RNG.standard_normal(5))
+        assert len(fig.current_axis._children) == 1, (  # noqa: SLF001
+            "Plot with one vector should generate one line!"
+        )
 
 
-def test_semilogx() -> None:
+def test_semilogy() -> None:
     """Test plot with logarithmic y-axis."""
-    fig = FFig(show=SHOW)
-    fig.semilogx(RNG.standard_normal(5))
-    assert len(fig.current_axis._children) == 1, "Plot with one vector should generate one line!"  # noqa: SLF001
-    fig.close()
+    with FFig(show=SHOW) as fig:
+        fig.semilogy(RNG.standard_normal(5))
+        assert len(fig.current_axis._children) == 1, (  # noqa: SLF001
+            "Plot with one vector should generate one line!"
+        )
 
 
 def test_label() -> None:
@@ -170,6 +172,22 @@ def test_subplot_arg() -> None:
     fig.close()
 
 
+def test_next_color() -> None:
+    """Test method next_color."""
+    fig = FFig(show=SHOW)
+    fig.plot()
+    assert np.isclose(fig.next_color, fig.colors["green"]).all()
+    fig.close()
+
+
+def test_last_color() -> None:
+    """Test method last_color."""
+    fig = FFig(show=SHOW)
+    fig.plot()
+    assert np.isclose(fig.last_color, fig.colors["blue"]).all()
+    fig.close()
+
+
 @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not installed")
 def test_plot_dataframe() -> None:
     """Test plot of pandas DataFrame with two columns and index."""
@@ -177,7 +195,7 @@ def test_plot_dataframe() -> None:
 
     # Create a test DataFrame
     index = pd.date_range("2024-01-01", periods=5, freq="D")
-    df = pd.DataFrame(  # noqa: PD901
+    df = pd.DataFrame(
         {
             "A": [1, 2, 3, 4, 5],
             "B": [2, 4, 6, 8, 10],

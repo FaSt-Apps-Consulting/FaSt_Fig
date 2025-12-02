@@ -53,19 +53,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
 from packaging import version
-
-if TYPE_CHECKING:
-    from types import TracebackType
-
-    import pandas as pd
-    from matplotlib.lines import Line2D
-
-
 from typing_extensions import Self
 
 from . import presets
 
-MAT_EXAMPLE = np.array([[1, 2, 3, 4, 5, 6, 7], np.random.randn(7), 2 * np.random.randn(7)])  # noqa: NPY002
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    from matplotlib.lines import Line2D
+
+try:
+    import pandas as pd
+
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+
+
+MAT_EXAMPLE = np.array([[1, 2, 3, 4, 5, 6, 7], [1, 0, 3, 2, 4, 6, 6], [0, 2, 2, 3, 4, 5, 4]])
 
 
 # %%
@@ -123,7 +128,7 @@ class FFig:
         template: str = "m",
         nrows: int = 1,
         ncols: int = 1,
-        **kwargs: int | str | bool | dict[str, Any] | None,
+        **kwargs: float | str | bool | dict[str, Any] | None,
     ) -> None:
         """Initialize a new FFig instance.
 
@@ -214,6 +219,7 @@ class FFig:
         self.handle_bar = None
         self.handle_plot = None
         self.handle_surface = None
+        self.current_axis = None
         self.linewidth = kwargs["linewidth"]
 
         # Create figure
@@ -329,6 +335,7 @@ class FFig:
         - Creating a new grid clears the existing figure
         - When sharing axes, 'all' shares between all subplots,
           'row' shares within rows, 'col' shares within columns
+
         """
         if len(args) == 1:
             index = args[0]
@@ -403,6 +410,7 @@ class FFig:
         >>> fig.bar_plot([1, 2, 3], [4, 5, 6], width=0.5, color='red')  # Customized bars
         >>> fig.bar_plot([1, 2], [4, 5], yerr=[0.5, 0.5])  # With error bars
         >>> fig.bar_plot([1, 2], [4, 5], bottom=[1, 1])  # Stacked bars
+
         """
         self.handle_bar = self.current_axis.bar(*args, **kwargs)
         return self.handle_bar
@@ -435,12 +443,7 @@ class FFig:
         """
         plot_objects = []
 
-        try:
-            import pandas as pd
-
-            is_dataframe = isinstance(data, pd.DataFrame)
-        except ImportError:
-            is_dataframe = False
+        is_dataframe = isinstance(data, pd.DataFrame) if PANDAS_AVAILABLE else False
 
         if is_dataframe:
             # Plot each column of the DataFrame
@@ -577,6 +580,7 @@ class FFig:
             **kwargs,
         )
 
+    @property
     def last_color(self) -> np.ndarray:
         """Return last color code used by plot.
 
@@ -592,9 +596,21 @@ class FFig:
 
         """
         if self.handle_plot is None or len(self.handle_plot) == 0:
-            msg = "No plot exists yet to get color from"
+            msg = "No plot exists yet to get color"
             raise ValueError(msg)
         return self.handle_plot[0].get_color()
+
+    @property
+    def next_color(self) -> np.ndarray:
+        """Return next color code used for plot.
+
+        Returns
+        -------
+        np.ndarray
+            RGB color array
+
+        """
+        return self.current_axis._get_lines.get_next_color()
 
     def pcolor(
         self: FFig,
@@ -1137,6 +1153,7 @@ class FFig:
         >>> fig.plot(data)
         >>> fig.show()  # Non-blocking display
         >>> fig.show(block=True)  # Block until window closed
+
         """
         self.set_parameters()
         plt.show(block=block)
