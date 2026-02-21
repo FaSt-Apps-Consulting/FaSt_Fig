@@ -123,6 +123,20 @@ class FFig:
         """
         self.close()
 
+    def __repr__(self: FFig) -> str:
+        """Return a string representation of the FFig instance."""
+        return (
+            f"FFig(template='{self.template}', nrows={self.subplot_nrows}, "
+            f"ncols={self.subplot_ncols}, index={self.subplot_index})"
+        )
+
+    def __str__(self: FFig) -> str:
+        """Return a user-friendly string representation of the FFig instance."""
+        return (
+            f"FFig figure with {self.subplot_nrows}x{self.subplot_ncols} subplots "
+            f"(current index: {self.subplot_index})"
+        )
+
     def __init__(
         self: FFig,
         template: str = "m",
@@ -178,6 +192,7 @@ class FFig:
         """
         # Enable logger
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.template = template.lower()
 
         kwargs.setdefault("isubplot", 0)
         kwargs.setdefault("sharex", False)
@@ -191,13 +206,12 @@ class FFig:
         self.presets = presets.define_presets(kwargs["presets"])
 
         # Check if template exists (ignoring case), otherwise set template m (default)
-        template = template.lower()
-        if template not in self.presets:
-            template = "m"
+        if self.template not in self.presets:
+            self.template = "m"
 
         # Fill undefined kwargs with presets
         for key in ["width", "height", "fontfamily", "fontsize", "linewidth"]:
-            kwargs.setdefault(key, self.presets[template][key])
+            kwargs.setdefault(key, self.presets[self.template][key])
 
         # Apply parameters to matplotlib
         mpl.rc("font", size=kwargs["fontsize"])
@@ -216,6 +230,8 @@ class FFig:
         # Store global variables
         self.figure_show = kwargs["show"]  # show figure after saving
         self.subplot_index = 0
+        self.subplot_nrows = nrows
+        self.subplot_ncols = ncols
         self.handle_bar = None
         self.handle_plot = None
         self.handle_surface = None
