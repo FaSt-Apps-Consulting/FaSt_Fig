@@ -1044,6 +1044,20 @@ class FFig:
         handles, _ = self.current_axis.get_legend_handles_labels()
         return np.size(handles)
 
+    def get_all_labels(self):
+        labels = []
+        if np.shape(self.handle_axis) == ():
+            axis_list = [self.handle_axis]
+        else:
+            axis_list = self.handle_axis.flatten()
+
+        for axis in axis_list:
+            for child in axis.get_children():
+                label = child.get_label()
+                if isinstance(label, str) and label != "" and not label.startswith("_"):
+                    labels.append(label)
+        return labels
+
     def set_cycle(
         self: FFig,
         colors: dict[str, list[int]],
