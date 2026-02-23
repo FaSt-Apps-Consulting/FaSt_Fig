@@ -12,3 +12,4 @@ fast_fig.egg-info/*
 .python-version
 .venv
 uv.lock
+.coverage

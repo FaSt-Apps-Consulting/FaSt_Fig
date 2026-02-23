@@ -48,3 +48,11 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = "--cov=fast_fig --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["fast_fig"]
+
+[tool.coverage.report]
+show_missing = true

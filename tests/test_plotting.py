@@ -126,3 +126,18 @@ def test_plot_dataframe() -> None:
         "xlabel should default to index name for DataFrame!"
     )
     fig.close()
+
+
+def test_bar_plot() -> None:
+    """Test bar_plot method."""
+    with FFig(show=SHOW) as fig:
+        fig.bar_plot([1, 2, 3], [4, 5, 6])
+        assert len(fig.current_axis.patches) == 3
+
+
+def test_pcolor_square() -> None:
+    """Test pcolor_square method."""
+    with FFig(show=SHOW) as fig:
+        data = np.random.rand(10, 10)
+        fig.pcolor_square(data)
+        assert fig.handle_surface is not None

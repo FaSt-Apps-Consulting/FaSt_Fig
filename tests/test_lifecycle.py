@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+import pytest
 from fast_fig import FFig
 
 SHOW = False
@@ -61,3 +62,30 @@ def test_clear_after_close() -> None:
     # Try to clear after close
     success = fig.clear()
     assert success is True, "Clear should return True after figure is closed"
+
+
+def test_repr_str() -> None:
+    """Test __repr__ and __str__ methods."""
+    with FFig(template="s", nrows=2, ncols=3, show=SHOW) as fig:
+        r = repr(fig)
+        s = str(fig)
+        assert "FFig" in r
+        assert "template='s'" in r
+        assert "nrows=2" in r
+        assert "ncols=3" in r
+        assert "2x3 subplots" in s
+
+
+def test_getattr_delegation() -> None:
+    """Test __getattr__ delegation to internal handles."""
+    with FFig(show=SHOW) as fig:
+        # Should delegate to current_axis (Axes object)
+        assert hasattr(fig, "get_title")
+        assert callable(fig.get_title)
+
+        # Should delegate to handle_fig (Figure object)
+        assert hasattr(fig, "get_size_inches")
+
+        # Non-existent attribute should raise AttributeError
+        with pytest.raises(AttributeError, match="cannot be processed"):
+            _ = fig.non_existent_attribute

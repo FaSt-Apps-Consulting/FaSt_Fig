@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 import fast_fig
+from fast_fig.presets import define_presets
 
 
 # %%
@@ -155,3 +156,33 @@ def test_yaml_not_available(tmpdir: str, monkeypatch: pytest.MonkeyPatch) -> Non
 
     with pytest.raises(ValueError, match="YAML support requires PyYAML"):
         fast_fig.presets.load_config(yaml_path)
+
+
+def test_define_presets_file_loading(tmp_path: Path) -> None:
+    """Test loading presets from files."""
+    # Test JSON file
+    json_file = tmp_path / "test_presets.json"
+    json_data = {"test_preset": {"width": 5, "height": 5}}
+    import json
+
+    with open(json_file, "w") as f:
+        json.dump(json_data, f)
+
+    presets = define_presets(json_file)
+    assert "test_preset" in presets
+    assert presets["test_preset"]["width"] == 5
+
+    # Test YAML file if available
+    try:
+        import yaml
+
+        yaml_file = tmp_path / "test_presets.yaml"
+        yaml_data = {"yaml_preset": {"width": 7, "height": 7}}
+        with open(yaml_file, "w") as f:
+            yaml.dump(yaml_data, f)
+
+        presets = define_presets(yaml_file)
+        assert "yaml_preset" in presets
+        assert presets["yaml_preset"]["width"] == 7
+    except ImportError:
+        pass
