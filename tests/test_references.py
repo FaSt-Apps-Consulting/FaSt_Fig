@@ -33,8 +33,9 @@ def calc_checksum(file_path: str | Path) -> str:
 
 
 # %%
-def test_subplot2(tmpdir: str, test_name: str = "test_subplot2.png") -> None:
+def test_subplot2(tmpdir: str) -> None:
     """Test subplot with 2 plots."""
+    test_name = "test_subplot2.png"
     test_file = Path(tmpdir) / test_name
     fig = FFig(nrows=2, show=SHOW)  # create figure
     fig.plot([1, 2, 3, 1, 2, 3, 4, 1, 1])  # plot first data set
@@ -57,8 +58,9 @@ def test_subplot2(tmpdir: str, test_name: str = "test_subplot2.png") -> None:
 
 
 # %%
-def test_subplot6(tmpdir: str, test_name: str = "test_subplot6.png") -> None:
+def test_subplot6(tmpdir: str) -> None:
     """Test subplot with 6 plots."""
+    test_name = "test_subplot6.png"
     test_file = Path(tmpdir) / test_name
     fig = FFig("l", nrows=2, ncols=3, isubplot=1, show=SHOW)
     assert fig.subplot_index == 1, "Current axe number should be 1"
@@ -84,8 +86,9 @@ def test_subplot6(tmpdir: str, test_name: str = "test_subplot6.png") -> None:
 
 
 # %%
-def test_subplot2x2(tmpdir: str, test_name: str = "test_subplot2x2.png") -> None:
+def test_subplot2x2(tmpdir: str) -> None:
     """Test subplot with 4 plots."""
+    test_name = "test_subplot2x2.png"
     test_file = Path(tmpdir) / test_name
     test_data = np.array(
         [
@@ -138,8 +141,9 @@ def test_subplot2x2(tmpdir: str, test_name: str = "test_subplot2x2.png") -> None
 
 
 # %%
-def test_pcolor(tmpdir: str, test_name: str = "test_pcolor.png") -> None:
+def test_pcolor(tmpdir: str) -> None:
     """Test pcolor with Gaussian."""
+    test_name = "test_pcolor.png"
     test_file = Path(tmpdir) / test_name
     xvec = np.arange(-50e-6, 50e-6, 0.1e-6)
     xmesh, ymesh = np.meshgrid(xvec, xvec)
@@ -161,8 +165,9 @@ def test_pcolor(tmpdir: str, test_name: str = "test_pcolor.png") -> None:
 
 
 # %%
-def test_pcolor_log(tmpdir: str, test_name: str = "test_pcolor_log.png") -> None:
+def test_pcolor_log(tmpdir: str) -> None:
     """Test pcolor with logarithmic scaling."""
+    test_name = "test_pcolor_log.png"
     test_file = Path(tmpdir) / test_name
 
     xvec = np.arange(-50e-6, 50e-6, 0.1e-6)
@@ -185,8 +190,9 @@ def test_pcolor_log(tmpdir: str, test_name: str = "test_pcolor_log.png") -> None
 
 
 # %%
-def test_legend(tmpdir: str, test_name: str = "test_legend.png") -> None:
+def test_legend(tmpdir: str) -> None:
     """Test lengend function."""
+    test_name = "test_legend.png"
     test_file = Path(tmpdir) / test_name
     fig = FFig("OL", show=SHOW)
     fig.set_ylim(-10, 2)

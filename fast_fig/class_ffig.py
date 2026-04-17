@@ -156,7 +156,7 @@ class FFig:
             Number of subplot rows, by default 1
         ncols : int, optional
             Number of subplot columns, by default 1
-        **kwargs : int | str | bool | dict | None
+        **kwargs : float | str | bool | dict | None
             Additional keyword arguments:
             - isubplot : int
                 Initial subplot index, by default 0
@@ -587,7 +587,7 @@ class FFig:
 
         """
         if color is None:
-            color = self.last_color()
+            color = self.last_color
         return self.current_axis.fill_between(
             *args,
             color=color,
@@ -616,9 +616,10 @@ class FFig:
             raise ValueError(msg)
         return self.handle_plot[0].get_color()
 
-    @property
-    def next_color(self) -> np.ndarray:
+    def get_next_color(self) -> np.ndarray:
         """Return next color code used for plot.
+
+        Note: This method advances the color cycler.
 
         Returns
         -------
@@ -626,7 +627,7 @@ class FFig:
             RGB color array
 
         """
-        return self.current_axis._get_lines.get_next_color()
+        return self.current_axis._get_lines.get_next_color()  # noqa: SLF001
 
     def pcolor(
         self: FFig,
@@ -1044,7 +1045,15 @@ class FFig:
         handles, _ = self.current_axis.get_legend_handles_labels()
         return np.size(handles)
 
-    def get_all_labels(self):
+    def get_all_labels(self) -> list[str]:
+        """Get all labels of all axes in the figure.
+
+        Returns
+        -------
+        list[str]
+            List of all labels
+
+        """
         labels = []
         if np.shape(self.handle_axis) == ():
             axis_list = [self.handle_axis]
@@ -1153,7 +1162,8 @@ class FFig:
         """
         img_path = Path(img)
         if img_path.is_file():
-            self.handle_fig.figimage(img_path, xpos, ypos, alpha=alpha, zorder=zorder, **kwargs)
+            img_array = plt.imread(img_path)
+            self.handle_fig.figimage(img_array, xpos, ypos, alpha=alpha, zorder=zorder, **kwargs)
         else:
             msg = f"Watermark image not found: {img_path}"
             raise FileNotFoundError(msg)

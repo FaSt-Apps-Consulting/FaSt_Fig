@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+import matplotlib as mpl
 import numpy as np
 import pytest
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+
 from fast_fig import FFig
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 try:
     import pandas as pd
@@ -138,6 +146,95 @@ def test_bar_plot() -> None:
 def test_pcolor_square() -> None:
     """Test pcolor_square method."""
     with FFig(show=SHOW) as fig:
-        data = np.random.rand(10, 10)
+        data = RNG.random((10, 10))
         fig.pcolor_square(data)
         assert fig.handle_surface is not None
+
+
+def test_fill_between() -> None:
+    """Test fill_between method."""
+    with FFig(show=SHOW) as fig:
+        x = np.linspace(0, 1, 10)
+        y1 = x
+        y2 = x**2
+        fig.plot(x, y1)  # Create a plot first so last_color works
+        poly = fig.fill_between(x, y1, y2)
+        assert isinstance(poly, mpl.collections.PolyCollection)
+
+
+def test_plot_matrix_transpose() -> None:
+    """Test plot with matrix that needs transpose (more rows than columns)."""
+    with FFig(show=SHOW) as fig:
+        # 5 rows, 3 columns. Should transpose to 3 rows (1st is x, 2nd and 3rd are y).
+        data = RNG.standard_normal((5, 3))
+        lines = fig.plot(data)
+        # 3 rows means 1 x-row and 2 y-rows -> 2 lines
+        assert len(lines) == 2
+        assert len(fig.handle_plot) == 2
+
+
+def test_plot_dataframe_index_name() -> None:
+    """Test plot with DataFrame that has a named index."""
+    if not PANDAS_AVAILABLE:
+        pytest.skip("pandas not available")
+    import pandas as pd  # noqa: PLC0415
+    df = pd.DataFrame({"A": [1, 2, 3]}, index=[10, 20, 30])
+    df.index.name = "MyIndex"
+    with FFig(show=SHOW) as fig:
+        fig.plot(df)
+        assert fig.current_axis.get_xlabel() == "MyIndex"
+
+
+def test_colorbar() -> None:
+    """Test colorbar method."""
+    with FFig(show=SHOW) as fig:
+        data = RNG.standard_normal((10, 10))
+        fig.pcolor(data)
+        cb = fig.colorbar(label="Test Label")
+        assert cb is not None
+        assert cb.ax.get_ylabel() == "Test Label"
+
+
+def test_watermark(tmp_path: Path) -> None:
+    """Test watermark method."""
+    # Create a dummy image
+    img_path = tmp_path / "watermark.png"
+    fig_temp = mpl.figure.Figure()
+    _ = FigureCanvasAgg(fig_temp)
+    fig_temp.savefig(img_path)
+
+    with FFig(show=SHOW) as fig:
+        fig.watermark(img_path)
+        # Check if figimage was called (it adds to images list)
+        assert len(fig.handle_fig.images) > 0
+
+    with FFig(show=SHOW) as fig, pytest.raises(FileNotFoundError):
+        fig.watermark("non_existent.png")
+
+
+def test_legend_empty_plot() -> None:
+    """Test legend with no plot objects."""
+    with FFig(show=SHOW) as fig:
+        # Should not raise error and not create legend
+        fig.legend()
+        assert fig.current_axis.get_legend() is None
+
+
+def test_legend_with_labels() -> None:
+    """Test legend with explicit labels."""
+    with FFig(show=SHOW) as fig:
+        fig.plot([1, 2], [3, 4])
+        fig.legend(labels=["New Label"])
+        _, labels = fig.current_axis.get_legend_handles_labels()
+        assert "New Label" in labels
+
+
+def test_legend_entries_check() -> None:
+    """Test legend_entries and legend_count."""
+    with FFig(show=SHOW) as fig:
+        fig.plot([1, 2], [3, 4], label="Test")
+        handles, labels = fig.legend_entries()
+        assert len(handles) == 1
+        assert labels[0] == "Test"
+        assert fig.legend_count() == 1
+

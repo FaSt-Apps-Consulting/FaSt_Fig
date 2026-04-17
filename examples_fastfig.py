@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 
+import fast_fig
 from fast_fig import FFig
 
 # %% Very simple example
@@ -42,12 +43,13 @@ fig.legend()
 fig.show()
 
 # %% Plot several lines with one matrix
+rng = np.random.default_rng(42)
 mat = np.array(
     [
         [1, 2, 3, 4, 5, 6, 7, 8],
-        np.random.randn(8),
-        2 * np.random.randn(8),
-        1.5 * np.random.randn(8),
+        rng.standard_normal(8),
+        2 * rng.standard_normal(8),
+        1.5 * rng.standard_normal(8),
     ],
 )
 fig = FFig()
@@ -96,7 +98,6 @@ fig.set_ylabel("Y-Axis")
 fig.set_xlabel("X-Axis")  # create xlabel for second axis
 fig.suptitle("Simulation result")  # set title for subplot
 fig.show()
-# fig.save("example_pcolor.png")  # save figure to png and pdf  # noqa: ERA001
 
 # %% Create thumbnail
 
@@ -110,7 +111,11 @@ fig.save("fastfig_thumbnail.png")
 # Create sample DataFrame
 dates = pd.date_range("2024-01-01", periods=10)
 df = pd.DataFrame(
-    {"A": np.random.randn(10), "B": np.random.randn(10) + 2, "C": np.random.randn(10) - 2},
+    {
+        "A": rng.standard_normal(10),
+        "B": rng.standard_normal(10) + 2,
+        "C": rng.standard_normal(10) - 2,
+    },
     index=dates,
 )
 
@@ -125,8 +130,6 @@ fig.show()
 
 # %% Example for custom preset with YAML file
 # Create a custom preset configuration
-import fast_fig
-
 fast_fig.presets.generate_file(filepath="example_preset.yaml")
 
 # Use the custom preset
@@ -140,7 +143,6 @@ fig.set_title("Publication-Ready Plot")
 fig.legend()
 fig.grid()
 fig.show()
-# fig.save('publication_plot.png')  # Will save with high DPI and tight layout
 
 # %% Beautiful visualization example
 
@@ -170,4 +172,3 @@ fig.set_ylabel("Y Position in mm")
 
 # Show the result
 fig.show()
-# fig.save('gaussian_landscape.png', dpi=300)  # Save in high resolution

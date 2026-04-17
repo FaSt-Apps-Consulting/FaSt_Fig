@@ -13,3 +13,4 @@ fast_fig.egg-info/*
 .venv
 uv.lock
 .coverage
+AGENTS.md

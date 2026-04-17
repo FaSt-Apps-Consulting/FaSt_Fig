@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import logging
+import subprocess
+import sys
+
 import matplotlib.pyplot as plt
 import pytest
+
 from fast_fig import FFig
 
 SHOW = False
@@ -89,3 +94,68 @@ def test_getattr_delegation() -> None:
         # Non-existent attribute should raise AttributeError
         with pytest.raises(AttributeError, match="cannot be processed"):
             _ = fig.non_existent_attribute
+
+
+def test_getattr_delegation_boost() -> None:
+    """Test __getattr__ delegation to various handles."""
+    with FFig(show=SHOW) as fig:
+        fig.plot([1, 2, 3])
+        # Delegate to handle_plot (list of lines)
+        assert fig.count(fig.handle_plot[0]) == 1  # list.count()
+
+        # Delegate to handle_axis (numpy array of axes or single axis)
+        assert fig.get_xlim() is not None
+
+
+def test_getattr_delegation_axis() -> None:
+    """Test __getattr__ delegation specifically to handle_axis."""
+    with FFig(nrows=2, show=SHOW) as fig:
+        if hasattr(fig.handle_axis, "reshape"):
+            assert fig.reshape((1, 2)) is not None
+
+
+def test_error_handling_logging(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that exceptions in try-except blocks are logged."""
+    with FFig(show=SHOW) as fig:
+        # Mock tight_layout to fail
+        def fail_tight_layout() -> None:
+            msg = "Mock failure"
+            raise ValueError(msg)
+
+        fig.handle_fig.tight_layout = fail_tight_layout
+
+        with caplog.at_level(logging.ERROR):
+            fig.set_parameters()
+            assert "set_parameters(): Tight layout cannot be set!" in caplog.text
+
+
+def test_clear_error_logging(caplog: pytest.LogCaptureFixture) -> None:
+    """Test clear method error logging."""
+    with FFig(show=SHOW) as fig:
+        def fail_clf(*_args: float | str | bool, **_kwargs: float | str | bool) -> None:
+            msg = "Mock failure"
+            raise AttributeError(msg)
+
+        fig.handle_fig.clf = fail_clf
+
+        with caplog.at_level(logging.ERROR):
+            result = fig.clear()
+            assert result is False
+            assert "Error clearing figure" in caplog.text
+
+
+def test_init_invalid_template() -> None:
+    """Test initializing with an invalid template name."""
+    with FFig(template="non_existent", show=SHOW) as fig:
+        assert fig.template == "m"
+
+
+def test_main_block() -> None:
+    """Test the if __name__ == '__main__': block."""
+    script = """
+import matplotlib.pyplot as plt
+from unittest.mock import patch
+with patch('matplotlib.pyplot.show'):
+    import fast_fig.class_ffig
+"""
+    subprocess.run([sys.executable, "-c", script], check=True, env={"PYTHONPATH": "."}, timeout=30)  # noqa: S603

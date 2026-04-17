@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import logging
-import numpy as np
+from typing import TYPE_CHECKING
+
 import pytest
+
 from fast_fig import FFig
+
+if TYPE_CHECKING:
+    import pytest
 
 SHOW = False
 
@@ -57,7 +62,7 @@ def test_set_xlim_ylim() -> None:
 
 def test_set_xlim_errors(caplog: pytest.LogCaptureFixture) -> None:
     """Test error handling in set_xlim."""
-    with FFig(show=SHOW) as fig:
+    with FFig(show=SHOW) as fig, caplog.at_level(logging.ERROR):
         # This should trigger the try-except block in set_xlim
-        with caplog.at_level(logging.ERROR):
-            fig.set_xlim("invalid", "input")
+        fig.set_xlim("invalid", "input")
+        assert "Error setting x limits" in caplog.text
