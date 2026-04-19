@@ -1,3 +1,5 @@
+# Changelog of FaSt_Fig
+
 ## [0.8.2] - 2026-04-19
 
 - Add __repr__ and __str__ methods
@@ -35,4 +37,3 @@
 ## [0.5] - 2024-03-26
 
 - FaSt_Fig initial release, based on classfig
-
