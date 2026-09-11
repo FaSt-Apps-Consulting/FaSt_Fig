@@ -14,3 +14,4 @@ fast_fig.egg-info/*
 uv.lock
 .coverage
 AGENTS.md
+.omo/*

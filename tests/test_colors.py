@@ -45,8 +45,10 @@ def test_get_next_color_no_plot() -> None:
 def test_set_cycle_error(caplog: pytest.LogCaptureFixture) -> None:
     """Test set_cycle error logging."""
     # Let's try to mock cycler to fail
-    with FFig(show=SHOW) as fig, \
-         patch("fast_fig.class_ffig.cycler", side_effect=TypeError("Mock Failure")), \
-         caplog.at_level(logging.ERROR):
+    with (
+        FFig(show=SHOW) as fig,
+        patch("fast_fig.class_ffig.cycler", side_effect=TypeError("Mock Failure")),
+        caplog.at_level(logging.ERROR),
+    ):
         fig.set_cycle({"c": [1, 2, 3]}, ["c"], ["-"])
         assert "set_cycle(): Cannot set cycle for color and linestyle" in caplog.text

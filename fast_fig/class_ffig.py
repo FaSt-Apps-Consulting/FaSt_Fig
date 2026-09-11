@@ -465,7 +465,11 @@ class FFig:
             # Plot each column of the DataFrame
             for column in data.columns:
                 lines = self.current_axis.plot(
-                    data.index, data[column], *args, label=column, **kwargs
+                    data.index,
+                    data[column],
+                    *args,
+                    label=column,
+                    **kwargs,
                 )
                 plot_objects.extend(lines)
             # Set x-label based on index type
@@ -495,7 +499,9 @@ class FFig:
         return plot_objects
 
     def semilogx(
-        self: FFig, *args: float | str | bool, **kwargs: float | str | bool
+        self: FFig,
+        *args: float | str | bool,
+        **kwargs: float | str | bool,
     ) -> list[Line2D]:
         """Create a plot with logarithmic x-axis scaling.
 
@@ -521,7 +527,9 @@ class FFig:
         return lines
 
     def semilogy(
-        self: FFig, *args: float | str | bool, **kwargs: float | str | bool
+        self: FFig,
+        *args: float | str | bool,
+        **kwargs: float | str | bool,
     ) -> list[Line2D]:
         """Create a plot with logarithmic y-axis scaling.
 
@@ -940,14 +948,18 @@ class FFig:
                     xmax = np.maximum(xmax, np.nanmax(xdata))
             if version.parse(mpl.__version__) >= version.parse("3"):
                 if np.isfinite(xmin):
-                    self.current_axis.set_xlim(left=xmin)
+                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
+                        self.current_axis.set_xlim(left=xmin)
                 if np.isfinite(xmax):
-                    self.current_axis.set_xlim(right=xmax)
+                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
+                        self.current_axis.set_xlim(right=xmax)
             else:
                 if np.isfinite(xmin):
-                    self.current_axis.set_xlim(xmin=xmin)
+                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
+                        self.current_axis.set_xlim(xmin=xmin)
                 if np.isfinite(xmax):
-                    self.current_axis.set_xlim(xmax=xmax)
+                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
+                        self.current_axis.set_xlim(xmax=xmax)
         except (ValueError, TypeError):
             self.logger.exception("Error setting x limits")
 
@@ -982,14 +994,18 @@ class FFig:
                     ymax = np.maximum(ymax, np.nanmax(ydata))
             if version.parse(mpl.__version__) >= version.parse("3"):
                 if np.isfinite(ymin):
-                    self.current_axis.set_ylim(bottom=ymin)
+                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
+                        self.current_axis.set_ylim(bottom=ymin)
                 if np.isfinite(ymax):
-                    self.current_axis.set_ylim(top=ymax)
+                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
+                        self.current_axis.set_ylim(top=ymax)
             else:
                 if np.isfinite(ymin):
-                    self.current_axis.set_ylim(ymin=ymin)
+                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
+                        self.current_axis.set_ylim(ymin=ymin)
                 if np.isfinite(ymax):
-                    self.current_axis.set_ylim(ymax=ymax)
+                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
+                        self.current_axis.set_ylim(ymax=ymax)
         except (ValueError, TypeError):
             self.logger.exception("Error setting y limits")
 
@@ -1236,39 +1252,41 @@ class FFig:
         >>> paths = fig.save('plot.png')  # Get saved paths
 
         """
+
         kwargs.setdefault("dpi", 300)  # Default to 300 dpi
         saved_files = []
 
-        filepath = Path(filename)
-        format_set = set()
+        if filename:
+            filepath = Path(filename)
+            format_set = set()
 
-        if filepath.suffix == "":
-            msg = f"FFig: Filepath {filepath} has no suffix, defaulting to .png!"
-            self.logger.warning(msg)
-            format_set.add(".png")
-        else:
-            format_set.add(filepath.suffix)
+            if filepath.suffix == "":
+                msg = f"FFig: Filepath {filepath} has no suffix, defaulting to .png!"
+                self.logger.warning(msg)
+                format_set.add(".png")
+            else:
+                format_set.add(filepath.suffix)
 
-        for iarg in args:
-            if isinstance(iarg, int):
-                kwargs["dpi"] = iarg
-            elif isinstance(iarg, str):
-                if iarg.startswith("."):
-                    format_set.add(iarg)
-                else:
-                    format_set.add("." + iarg)
+            for iarg in args:
+                if isinstance(iarg, int):
+                    kwargs["dpi"] = iarg
+                elif isinstance(iarg, str):
+                    if iarg.startswith("."):
+                        format_set.add(iarg)
+                    else:
+                        format_set.add("." + iarg)
 
-        self.set_parameters()
+            self.set_parameters()
 
-        for iformat in format_set:
-            ifilepath = filepath.with_suffix(iformat)
-            try:
-                ifilepath.parent.mkdir(parents=True, exist_ok=True)
-                self.handle_fig.savefig(ifilepath, **kwargs)
-                saved_files.append(ifilepath)
-            except (FileNotFoundError, PermissionError, OSError):
-                except_message = f"save(): Figure cannot be saved to {ifilepath}"
-                self.logger.exception(except_message)
+            for iformat in format_set:
+                ifilepath = filepath.with_suffix(iformat)
+                try:
+                    ifilepath.parent.mkdir(parents=True, exist_ok=True)
+                    self.handle_fig.savefig(ifilepath, **kwargs)
+                    saved_files.append(ifilepath)
+                except (FileNotFoundError, PermissionError, OSError):
+                    except_message = f"save(): Figure cannot be saved to {ifilepath}"
+                    self.logger.exception(except_message)
 
         if self.figure_show:
             plt.show()  # block=False)

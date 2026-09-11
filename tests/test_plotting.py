@@ -178,6 +178,7 @@ def test_plot_dataframe_index_name() -> None:
     if not PANDAS_AVAILABLE:
         pytest.skip("pandas not available")
     import pandas as pd  # noqa: PLC0415
+
     df = pd.DataFrame({"A": [1, 2, 3]}, index=[10, 20, 30])
     df.index.name = "MyIndex"
     with FFig(show=SHOW) as fig:
@@ -237,4 +238,3 @@ def test_legend_entries_check() -> None:
         assert len(handles) == 1
         assert labels[0] == "Test"
         assert fig.legend_count() == 1
-

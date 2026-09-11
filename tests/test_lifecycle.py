@@ -132,6 +132,7 @@ def test_error_handling_logging(caplog: pytest.LogCaptureFixture) -> None:
 def test_clear_error_logging(caplog: pytest.LogCaptureFixture) -> None:
     """Test clear method error logging."""
     with FFig(show=SHOW) as fig:
+
         def fail_clf(*_args: float | str | bool, **_kwargs: float | str | bool) -> None:
             msg = "Mock failure"
             raise AttributeError(msg)
