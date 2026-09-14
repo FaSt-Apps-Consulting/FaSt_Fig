@@ -39,11 +39,19 @@ ignore = [
     "S101",  # Ignore assert statements in tests
     "PLR2004",  # Ignore magic numbers in tests
 ]
+"fast_fig/class_ffig.py" = [
+    "C901",  # set_xlim/set_ylim parameter validation; refactor candidate
+    "PLR0912",  # ditto
+]
+
+[tool.ruff.lint.flake8-copyright]
+author = "Fabian Stutzki"
 
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
     "pytest-cov>=6.1.1",
+    "ruff>=0.16.7",
 ]
 
 [tool.pytest.ini_options]
