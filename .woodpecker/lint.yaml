@@ -1,0 +1,18 @@
+# Ruff lint + format check. Single runner (lint is Python-version independent).
+when:
+  event: [push, pull_request]
+  branch: [main]
+
+variables:
+  - &uv-image ghcr.io/astral-sh/uv:0.12.13-python3.14-trixie-slim
+
+steps:
+  lint:
+    image: *uv-image
+    environment:
+      # Copy instead of hardlink: workspace is a mounted volume on Codeberg runners
+      UV_LINK_MODE: copy
+    commands:
+      - uv sync --locked
+      - uv run ruff check .
+      - uv run ruff format --check .
