@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Verify the permissive data-input typing scheme.
 
 Two layers of coverage:

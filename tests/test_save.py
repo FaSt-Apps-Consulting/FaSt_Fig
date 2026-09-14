@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Tests for save function of FaSt Fig."""
 
 # %%

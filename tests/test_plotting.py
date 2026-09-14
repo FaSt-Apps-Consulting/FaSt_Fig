@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Tests for basic plotting functionality in FFig."""
 
 from __future__ import annotations

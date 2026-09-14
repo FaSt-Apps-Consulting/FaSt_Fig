@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """FFig simplifies handling of matplotlib figures.
 
 Key features:
@@ -957,19 +958,23 @@ class FFig:
                     xmin = np.minimum(xmin, np.nanmin(xdata))
                     xmax = np.maximum(xmax, np.nanmax(xdata))
             if version.parse(mpl.__version__) >= version.parse("3"):
-                if np.isfinite(xmin):
-                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
-                        self.current_axis.set_xlim(left=xmin)
-                if np.isfinite(xmax):
-                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
-                        self.current_axis.set_xlim(right=xmax)
+                if np.isfinite(xmin) and not (
+                    np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax
+                ):
+                    self.current_axis.set_xlim(left=xmin)
+                if np.isfinite(xmax) and not (
+                    np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax
+                ):
+                    self.current_axis.set_xlim(right=xmax)
             else:
-                if np.isfinite(xmin):
-                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
-                        self.current_axis.set_xlim(xmin=xmin)
-                if np.isfinite(xmax):
-                    if not (np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax):
-                        self.current_axis.set_xlim(xmax=xmax)
+                if np.isfinite(xmin) and not (
+                    np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax
+                ):
+                    self.current_axis.set_xlim(xmin=xmin)
+                if np.isfinite(xmax) and not (
+                    np.isfinite(xmin) and np.isfinite(xmax) and xmin == xmax
+                ):
+                    self.current_axis.set_xlim(xmax=xmax)
         except (ValueError, TypeError):
             self.logger.exception("Error setting x limits")
 
@@ -1003,19 +1008,23 @@ class FFig:
                     ymin = np.minimum(ymin, np.nanmin(ydata))
                     ymax = np.maximum(ymax, np.nanmax(ydata))
             if version.parse(mpl.__version__) >= version.parse("3"):
-                if np.isfinite(ymin):
-                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
-                        self.current_axis.set_ylim(bottom=ymin)
-                if np.isfinite(ymax):
-                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
-                        self.current_axis.set_ylim(top=ymax)
+                if np.isfinite(ymin) and not (
+                    np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax
+                ):
+                    self.current_axis.set_ylim(bottom=ymin)
+                if np.isfinite(ymax) and not (
+                    np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax
+                ):
+                    self.current_axis.set_ylim(top=ymax)
             else:
-                if np.isfinite(ymin):
-                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
-                        self.current_axis.set_ylim(ymin=ymin)
-                if np.isfinite(ymax):
-                    if not (np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax):
-                        self.current_axis.set_ylim(ymax=ymax)
+                if np.isfinite(ymin) and not (
+                    np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax
+                ):
+                    self.current_axis.set_ylim(ymin=ymin)
+                if np.isfinite(ymax) and not (
+                    np.isfinite(ymin) and np.isfinite(ymax) and ymin == ymax
+                ):
+                    self.current_axis.set_ylim(ymax=ymax)
         except (ValueError, TypeError):
             self.logger.exception("Error setting y limits")
 

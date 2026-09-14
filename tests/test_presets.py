@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Tests for the presets of FaSt_Fig."""
 
 # %%

@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Tests for compatibility and optional dependencies."""
 
 from __future__ import annotations

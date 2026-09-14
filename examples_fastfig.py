@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Script gives some examples for the use of FaSt_Fig."""
 
 # %%

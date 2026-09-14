@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 # ruff: noqa: N999
 """Init script for fast_fig to access class FFig more easily."""
 

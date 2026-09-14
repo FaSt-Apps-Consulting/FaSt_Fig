@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Tests for subplot management in FFig."""
 
 from __future__ import annotations

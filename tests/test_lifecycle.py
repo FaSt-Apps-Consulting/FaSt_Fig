@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Tests for FFig lifecycle (context manager, clear, close)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Verify matching reference for FaSt_Fig."""
 
 # %%

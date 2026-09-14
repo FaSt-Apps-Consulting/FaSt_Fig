@@ -1,3 +1,4 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Functions to define, validate and generate presets."""
 
 from __future__ import annotations
