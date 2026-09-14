@@ -46,20 +46,25 @@ __email__ = "fast@fast-apps.de"
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from cycler import cycler
 from packaging import version
-from typing_extensions import Self
+from typing_extensions import Self, TypeAlias
 
 from . import presets
 
 if TYPE_CHECKING:
     from types import TracebackType
 
+    from matplotlib.collections import PathCollection, PolyCollection, QuadMesh
+    from matplotlib.colorbar import Colorbar
+    from matplotlib.container import BarContainer
+    from matplotlib.contour import QuadContourSet
     from matplotlib.lines import Line2D
 
 try:
@@ -68,6 +73,11 @@ try:
     PANDAS_AVAILABLE = True
 except ImportError:
     PANDAS_AVAILABLE = False
+
+
+# Type alias for any numeric data container accepted by the plotting routines:
+# numpy array-likes (lists, tuples, ndarrays, scalars) plus pandas containers.
+DataLike: TypeAlias = Union[npt.ArrayLike, "pd.DataFrame", "pd.Series", "pd.Index"]
 
 
 MAT_EXAMPLE = np.array([[1, 2, 3, 4, 5, 6, 7], [1, 0, 3, 2, 4, 6, 6], [0, 2, 2, 3, 4, 5, 4]])
@@ -389,12 +399,12 @@ class FFig:
 
         self.set_current_axis(index=index)
 
-    def bar_plot(self: FFig, *args: float | str | bool, **kwargs: float | str | bool) -> None:
+    def bar_plot(self: FFig, *args: DataLike, **kwargs: DataLike) -> BarContainer:
         """Create a bar plot.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to matplotlib's bar. Common usage:
             - x : array-like
                 The x coordinates of the bars
@@ -402,7 +412,7 @@ class FFig:
                 The height of the bars
             - width : float or array-like, optional
                 The width(s) of the bars, default 0.8
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Additional keyword arguments passed to bar. Common ones:
             - color : color or list of colors
                 The colors of the bars
@@ -433,9 +443,9 @@ class FFig:
 
     def plot(
         self: FFig,
-        data: list | np.ndarray | "pd.DataFrame" | "pd.Series" = MAT_EXAMPLE,  # noqa: UP037
-        *args: float | str | bool,
-        **kwargs: float | str | bool,
+        data: DataLike = MAT_EXAMPLE,
+        *args: DataLike,
+        **kwargs: DataLike,
     ) -> list[Line2D]:
         """Generate a line plot.
 
@@ -444,10 +454,10 @@ class FFig:
         data : array-like or DataFrame
             If array-like: First row is used as x-values for all other rows
             If DataFrame: Index is used as x-values, each column as separate line
-        *args : float | str | bool
+        *args : DataLike
             Additional positional arguments passed to matplotlib's plot function
             Common usage includes format strings like 'ro' for red circles
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Additional keyword arguments passed to matplotlib's plot function
             Common ones include: label, color, linestyle, marker, alpha
 
@@ -459,9 +469,7 @@ class FFig:
         """
         plot_objects = []
 
-        is_dataframe = isinstance(data, pd.DataFrame) if PANDAS_AVAILABLE else False
-
-        if is_dataframe:
+        if PANDAS_AVAILABLE and isinstance(data, pd.DataFrame):
             # Plot each column of the DataFrame
             for column in data.columns:
                 lines = self.current_axis.plot(
@@ -477,39 +485,41 @@ class FFig:
                 self.set_xlabel("Date")
             elif data.index.name:
                 self.set_xlabel(data.index.name)
-        elif np.ndim(data) > 1:
-            if np.shape(data)[0] > np.shape(data)[1]:
-                data = data.T
-            for imat in data[1:]:
-                lines = self.current_axis.plot(data[0, :], imat, *args, **kwargs)
-                plot_objects.extend(lines)
-        elif (
-            len(args) > 0
-            and isinstance(args[0], (list, tuple))
-            and all(np.shape(entry) == np.shape(data) for entry in args[0])
-        ):
-            for y in args[0]:
-                lines = self.current_axis.plot(data, y, *args[1:], **kwargs)
-                plot_objects.extend(lines)
         else:
-            lines = self.current_axis.plot(data, *args, **kwargs)
-            plot_objects.extend(lines)
+            data_array = np.asanyarray(data)
+            if np.ndim(data_array) > 1:
+                if np.shape(data_array)[0] > np.shape(data_array)[1]:
+                    data_array = data_array.T
+                for imat in data_array[1:]:
+                    lines = self.current_axis.plot(data_array[0, :], imat, *args, **kwargs)
+                    plot_objects.extend(lines)
+            elif (
+                len(args) > 0
+                and isinstance(args[0], (list, tuple))
+                and all(np.shape(entry) == np.shape(data_array) for entry in args[0])
+            ):
+                for y in args[0]:
+                    lines = self.current_axis.plot(data_array, y, *args[1:], **kwargs)
+                    plot_objects.extend(lines)
+            else:
+                lines = self.current_axis.plot(data_array, *args, **kwargs)
+                plot_objects.extend(lines)
 
         self.handle_plot = plot_objects
         return plot_objects
 
     def semilogx(
         self: FFig,
-        *args: float | str | bool,
-        **kwargs: float | str | bool,
+        *args: DataLike,
+        **kwargs: DataLike,
     ) -> list[Line2D]:
         """Create a plot with logarithmic x-axis scaling.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to plot()
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Keyword arguments passed to plot()
 
         Returns
@@ -528,16 +538,16 @@ class FFig:
 
     def semilogy(
         self: FFig,
-        *args: float | str | bool,
-        **kwargs: float | str | bool,
+        *args: DataLike,
+        **kwargs: DataLike,
     ) -> list[Line2D]:
         """Create a plot with logarithmic y-axis scaling.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to plot()
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Keyword arguments passed to plot()
 
         Returns
@@ -556,29 +566,29 @@ class FFig:
 
     def fill_between(
         self: FFig,
-        *args: float | str | bool,
-        color: list | None = None,
+        *args: DataLike,
+        color: DataLike | None = None,
         alpha: float = 0.1,
         linewidth: float = 0,
-        **kwargs: float | str | bool,
-    ) -> mpl.collections.PolyCollection:
+        **kwargs: DataLike,
+    ) -> PolyCollection:
         """Fill the area between two curves.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to matplotlib's fill_between. Common usage:
             - x : array-like
                 The x coordinates
             - y1, y2 : array-like
                 The y coordinates between which to fill
-        color : list | None, optional
+        color : DataLike | None, optional
             Color for filling, by default None (uses last plot color)
         alpha : float, optional
             Transparency, by default 0.1
         linewidth : float, optional
             Width of the boundary line, by default 0
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Additional keyword arguments passed to fill_between
 
         Returns
@@ -639,20 +649,20 @@ class FFig:
 
     def pcolor(
         self: FFig,
-        *args: float | str | bool,
-        **kwargs: float | str | bool,
-    ) -> mpl.collections.QuadMesh:
+        *args: DataLike,
+        **kwargs: DataLike,
+    ) -> QuadMesh:
         """Create a pseudocolor plot of a 2D array.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to matplotlib's pcolormesh. Common usage:
             - C : array-like
                 2D array of color values
             - X, Y : array-like, optional
                 Coordinates of the quadrilateral corners
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Keyword arguments passed to matplotlib's pcolormesh. Common ones:
             - cmap : str or Colormap, default='nipy_spectral'
                 Colormap to use
@@ -680,16 +690,16 @@ class FFig:
 
     def pcolor_log(
         self: FFig,
-        *args: float | str | bool,
+        *args: DataLike,
         vmin: float | None = None,
         vmax: float | None = None,
-        **kwargs: float | str | bool,
-    ) -> mpl.collections.QuadMesh:
+        **kwargs: DataLike,
+    ) -> QuadMesh:
         """Create a pseudocolor plot with logarithmic color scaling.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to matplotlib's pcolormesh. Common usage:
             - C : array-like
                 2D array of color values (must be positive for log scale)
@@ -701,7 +711,7 @@ class FFig:
         vmax : float | None, optional
             Maximum value for logarithmic scaling, by default None.
             If None, uses the maximum of the data
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Additional keyword arguments passed to matplotlib's pcolormesh.
             Same as pcolor() with the addition of logarithmic normalization
 
@@ -730,9 +740,9 @@ class FFig:
 
     def pcolor_square(
         self: FFig,
-        *args: float | str | bool,
-        **kwargs: float | str | bool,
-    ) -> mpl.collections.QuadMesh:
+        *args: DataLike,
+        **kwargs: DataLike,
+    ) -> QuadMesh:
         """Create a square pseudocolor plot with hidden axes.
 
         Similar to pcolor() but creates a plot with:
@@ -742,14 +752,14 @@ class FFig:
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to matplotlib's pcolormesh. Common usage:
             - C : array-like
                 2D array of color values
             - X, Y : array-like, optional
                 Coordinates of the quadrilateral corners
-        **kwargs : float | str | bool
-            Keyword arguments passed to matplotlib's pcolormesh.
+        **kwargs : DataLike
+            Additional keyword arguments passed to matplotlib's pcolormesh.
             Same as pcolor() but with hidden axes
 
         Returns
@@ -774,20 +784,20 @@ class FFig:
 
     def contour(
         self: FFig,
-        *args: float | str | bool,
-        **kwargs: float | str | bool,
-    ) -> mpl.contour.QuadContourSet:
+        *args: DataLike,
+        **kwargs: DataLike,
+    ) -> QuadContourSet:
         """Create a 2D contour plot.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to matplotlib's contour. Common usage:
             - Z : array-like
                 The height values over which the contour is drawn
             - levels : int or array-like, optional
                 Number of contour levels or list of levels
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Keyword arguments passed to matplotlib's contour. Common ones:
             - colors : color string or sequence of colors
             - alpha : float
@@ -810,14 +820,14 @@ class FFig:
 
     def scatter(
         self: FFig,
-        *args: float | str | bool,
-        **kwargs: float | str | bool,
-    ) -> mpl.collections.PathCollection:
+        *args: DataLike,
+        **kwargs: DataLike,
+    ) -> PathCollection:
         """Create a scatter plot.
 
         Parameters
         ----------
-        *args : float | str | bool
+        *args : DataLike
             Arguments passed to matplotlib's scatter. Common usage:
             - x, y : array-like
                 The data positions
@@ -825,7 +835,7 @@ class FFig:
                 The marker size in points**2
             - c : color or array-like, optional
                 The marker colors
-        **kwargs : float | str | bool
+        **kwargs : DataLike
             Keyword arguments passed to matplotlib's scatter. Common ones:
             - alpha : float
                 The alpha blending value, between 0 (transparent) and 1 (opaque)
@@ -856,7 +866,7 @@ class FFig:
         self: FFig,
         *args: float | str | bool,
         **kwargs: float | str | bool,
-    ) -> mpl.colorbar.Colorbar:
+    ) -> Colorbar:
         """Add a colorbar to the current plot.
 
         Parameters
@@ -1217,7 +1227,7 @@ class FFig:
     def save(
         self: FFig,
         filename: str | Path | None,
-        *args: float | str | bool,
+        *args: int | str,
         **kwargs: float | str | bool,
     ) -> list[Path]:
         """Save figure as image (png, pdf...).
@@ -1226,7 +1236,7 @@ class FFig:
         ----------
         filename : str | Path
             Base filename to save to. If no extension, defaults to .png
-        *args : float | str | bool
+        *args : int | str
             Can include:
             - Integer for DPI value
             - Strings for additional formats (e.g., 'pdf', '.pdf')
@@ -1252,7 +1262,6 @@ class FFig:
         >>> paths = fig.save('plot.png')  # Get saved paths
 
         """
-
         kwargs.setdefault("dpi", 300)  # Default to 300 dpi
         saved_files = []
 
