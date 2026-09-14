@@ -1,5 +1,10 @@
 # Changelog of FaSt_Fig
 
+## [0.8.3] - 2026-09-14
+
+- Improve typing for array-like arguments
+- set_ylim and set_ylim with finite limits
+
 ## [0.8.2] - 2026-04-19
 
 - Add __repr__ and __str__ methods
