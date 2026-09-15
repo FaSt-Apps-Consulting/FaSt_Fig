@@ -1,6 +1,6 @@
 [project]
 name = "fast_fig"
-version = "0.8.1"
+version = "0.8.3"
 description = "FaSt_Fig is a wrapper for matplotlib with templates."
 authors = [
     {name = "Fabian Stutzki", email = "fast@fast-apps.de"}
@@ -12,7 +12,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 keywords = ["matplotlib", "figure"]
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
     "numpy>=1.26.0",
     "matplotlib>=3.6.0",
@@ -39,12 +39,28 @@ ignore = [
     "S101",  # Ignore assert statements in tests
     "PLR2004",  # Ignore magic numbers in tests
 ]
+"fast_fig/class_ffig.py" = [
+    "C901",  # set_xlim/set_ylim parameter validation; refactor candidate
+    "PLR0912",  # ditto
+]
+
+[tool.ruff.lint.flake8-copyright]
+author = "Fabian Stutzki"
 
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
     "pytest-cov>=6.1.1",
+    "ruff>=0.16.7",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = "--cov=fast_fig --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["fast_fig"]
+
+[tool.coverage.report]
+show_missing = true

@@ -1,14 +1,17 @@
+# Copyright (c) 2023 Fabian Stutzki
 """Tests for the presets of FaSt_Fig."""
 
 # %%
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
 import yaml
 
 import fast_fig
+from fast_fig.presets import define_presets
 
 
 # %%
@@ -155,3 +158,89 @@ def test_yaml_not_available(tmpdir: str, monkeypatch: pytest.MonkeyPatch) -> Non
 
     with pytest.raises(ValueError, match="YAML support requires PyYAML"):
         fast_fig.presets.load_config(yaml_path)
+
+
+def test_define_presets_file_loading(tmp_path: Path) -> None:
+    """Test loading presets from files."""
+    # Test JSON file
+    json_file = tmp_path / "test_presets.json"
+    json_data = {"test_preset": {"width": 5, "height": 5}}
+    import json  # noqa: PLC0415
+
+    with json_file.open("w") as f:
+        json.dump(json_data, f)
+
+    presets = define_presets(json_file)
+    assert "test_preset" in presets
+    assert presets["test_preset"]["width"] == 5
+
+    # Test YAML file if available
+    try:
+        import yaml  # noqa: PLC0415
+
+        yaml_file = tmp_path / "test_presets.yaml"
+        yaml_data = {"yaml_preset": {"width": 7, "height": 7}}
+        with yaml_file.open("w") as f:
+            yaml.dump(yaml_data, f)
+
+        presets = define_presets(yaml_file)
+        assert "yaml_preset" in presets
+        assert presets["yaml_preset"]["width"] == 7
+    except ImportError:
+        pass
+
+
+def test_presets_generate_file_boost(tmp_path: Path) -> None:
+    """Test generation of preset files."""
+    base_path = tmp_path / "test_presets"
+    fast_fig.presets.generate_file(str(base_path))
+
+    assert (tmp_path / "test_presets.json").exists()
+    # YAML might not be available in all test envs, but let's check if it tried
+    if fast_fig.presets.YAML_AVAILABLE:
+        assert (tmp_path / "test_presets.yaml").exists()
+
+
+def test_load_config_os_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test load_config with OS error."""
+    test_file = tmp_path / "test.json"
+    test_file.write_text("{}")
+
+    # Patch Path.open just for this test
+    original_open = Path.open
+
+    def mock_open(self: Path, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        if str(self).endswith("test.json"):
+            msg = "Mock OS Error"
+            raise OSError(msg)
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr("pathlib.Path.open", mock_open)
+
+    with pytest.raises(OSError, match="Error reading file"):
+        fast_fig.presets.load_config(test_file)
+
+
+def test_define_presets_yaml_discovery() -> None:
+    """Test define_presets discovering yaml file in CWD."""
+    yaml_file = Path("fast_fig_presets.yaml")
+    yaml_file.write_text("m: {width: 999}")
+    try:
+        p = define_presets()
+        assert p["m"]["width"] == 999
+    finally:
+        if yaml_file.exists():
+            yaml_file.unlink()
+
+
+def test_presets_generate_yaml_no_pyyaml(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test generate_file raises error when YAML not available."""
+    monkeypatch.setattr(fast_fig.presets, "YAML_AVAILABLE", False)
+    with pytest.raises(ValueError, match="YAML support requires PyYAML"):
+        fast_fig.presets.generate_file("test.yaml")
+
+
+def test_load_config_file_not_found() -> None:
+    """Test load_config with missing file."""
+    with pytest.raises(FileNotFoundError):
+        fast_fig.presets.load_config("non_existent_file.json")

@@ -19,19 +19,20 @@ pip install fast_fig
 
 ```python
 from fast_fig import FFig
-x = [1,2,3,4,5]
-y1 = [2,4,5,6,10]
-y2 = [1,3,2,6,9]
+
+x = [1, 2, 3, 4, 5]
+y1 = [2, 4, 5, 6, 10]
+y2 = [1, 3, 2, 6, 9]
 
 # Simple plot example
 fig = FFig()
-fig.plot(x,y1)
+fig.plot(x, y1)
 fig.show()
 
 # Use large template and save figure to multiple formats
-fig = FFig('l')
-fig.plot(x,y)
-fig.save('plot.png', 'pdf')
+fig = FFig("l")
+fig.plot(x, y)
+fig.save("plot.png", "pdf")
 ```
 
 ## Context Manager
@@ -39,7 +40,7 @@ fig.save('plot.png', 'pdf')
 FaSt_Fig can be used as a context manager for automatic resource cleanup:
 
 ```python
-with FFig('l', nrows=2, sharex=True) as fig:  # Large template, 2 rows sharing x-axis
+with FFig("l", nrows=2, sharex=True) as fig:  # Large template, 2 rows sharing x-axis
     fig.plot([1, 2, 2.5], label="First")  # Plot in first axis/subplot
     fig.set_title("First plot")
     fig.next_axis()  # Switch to second axis/subplot
@@ -69,7 +70,7 @@ x, y = np.meshgrid(np.linspace(-2, 2, 100), np.linspace(-2, 2, 100))
 z = np.exp(-(x**2 + y**2))
 
 fig.pcolor(z)  # pseudocolor plot
-fig.colorbar(label='Values')  # add colorbar
+fig.colorbar(label="Values")  # add colorbar
 
 
 fig.pcolor_log(z)  # pseudocolor with logarithmic color scale
@@ -88,17 +89,16 @@ FaSt_Fig has built-in support for pandas DataFrames:
 import pandas as pd
 
 # Create a DataFrame with datetime index
-df = pd.DataFrame({
-    'A': [1, 2, 3, 4],
-    'B': [2, 4, 6, 8]
-}, index=pd.date_range('2024-01-01', periods=4))
+df = pd.DataFrame(
+    {"A": [1, 2, 3, 4], "B": [2, 4, 6, 8]}, index=pd.date_range("2024-01-01", periods=4)
+)
 
 fig = FFig()
 fig.plot(df)  # Automatic handling:
-              # - Each column becomes a line
-              # - Column names become labels
-              # - Index used as x-axis
-              # - Date index sets x-label to "Date"
+# - Each column becomes a line
+# - Column names become labels
+# - Index used as x-axis
+# - Date index sets x-label to "Date"
 ```
 
 ## Matplotlib interaction
@@ -110,10 +110,10 @@ FaSt_Fig provides direct access to matplotlib objects through these handlers:
 - `fig.handle_plot`: Current plot instance(s)
 - `fig.handle_axis`: All axes instances for subplot access
 ```python
-fig.current_axis.set_yscale('log')  # Direct matplotlib axis methods
+fig.current_axis.set_yscale("log")  # Direct matplotlib axis methods
 fig.handle_fig.tight_layout()  # Adjust layout
 fig.handle_plot[0].set_linewidth(2)  # Modify line properties
-fig.handle_axis[0].set_title('First subplot')  # Access any subplot
+fig.handle_axis[0].set_title("First subplot")  # Access any subplot
 ```
 
 These handles provide full access to matplotlib's functionality when needed.
@@ -140,18 +140,18 @@ You can use presets in three ways:
 
 1. Use a built-in preset:
 ```python
-fig = FFig('l')  # Use large preset
+fig = FFig("l")  # Use large preset
 ```
 
 2. Load custom presets from a file:
 ```python
-fig = FFig('m', presets='my_presets.yaml')  # YAML format
-fig = FFig('m', presets='my_presets.json')  # or JSON format
+fig = FFig("m", presets="my_presets.yaml")  # YAML format
+fig = FFig("m", presets="my_presets.json")  # or JSON format
 ```
 
 3. Override specific preset values:
 ```python
-fig = FFig('m', width=12, fontsize=14)  # Override width and fontsize
+fig = FFig("m", width=12, fontsize=14)  # Override width and fontsize
 ```
 
 The preset system also includes color sequences and line styles that cycle automatically when plotting multiple lines:
