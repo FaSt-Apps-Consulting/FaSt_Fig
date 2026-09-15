@@ -160,7 +160,8 @@ def test_save_accepts_int_dpi(tmp_path: Path) -> None:
 
 def test_datalike_alias_contains_numpy_arraylike() -> None:
     """DataLike must embed numpy's ArrayLike as the generic array-like backbone."""
-    members = get_args(class_ffig.DataLike)
+    # PEP 695 aliases are lazy: resolve via __value__ before introspection.
+    members = get_args(class_ffig.DataLike.__value__)
     # DataLike is a Union, and typing flattens nested Unions, so ``npt.ArrayLike``
     # itself is not a member - its components are. Verify them as a subset.
     assert set(get_args(npt.ArrayLike)) <= set(members)
@@ -168,9 +169,8 @@ def test_datalike_alias_contains_numpy_arraylike() -> None:
 
 def test_datalike_alias_includes_pandas_containers() -> None:
     """DataLike must explicitly union pandas containers."""
-    members = get_args(class_ffig.DataLike)
-    forward_refs = {arg.__forward_arg__ for arg in members if hasattr(arg, "__forward_arg__")}
-    assert {"pd.DataFrame", "pd.Series", "pd.Index"} <= forward_refs
+    members = get_args(class_ffig.DataLike.__value__)
+    assert {pd.DataFrame, pd.Series, pd.Index} <= set(members)
 
 
 # %% Static type checking

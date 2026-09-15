@@ -47,7 +47,7 @@ __email__ = "fast@fast-apps.de"
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Self
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -55,7 +55,6 @@ import numpy as np
 import numpy.typing as npt
 from cycler import cycler
 from packaging import version
-from typing_extensions import Self, TypeAlias
 
 from . import presets
 
@@ -78,7 +77,8 @@ except ImportError:
 
 # Type alias for any numeric data container accepted by the plotting routines:
 # numpy array-likes (lists, tuples, ndarrays, scalars) plus pandas containers.
-DataLike: TypeAlias = Union[npt.ArrayLike, "pd.DataFrame", "pd.Series", "pd.Index"]
+# pandas is a hard dependency, so the unquoted references resolve lazily on use.
+type DataLike = npt.ArrayLike | pd.DataFrame | pd.Series | pd.Index
 
 
 MAT_EXAMPLE = np.array([[1, 2, 3, 4, 5, 6, 7], [1, 0, 3, 2, 4, 6, 6], [0, 2, 2, 3, 4, 5, 4]])
