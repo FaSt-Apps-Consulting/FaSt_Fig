@@ -153,6 +153,7 @@ class FFig:
         template: str = "m",
         nrows: int = 1,
         ncols: int = 1,
+        title: str | None = None,
         **kwargs: float | str | bool | dict[str, Any] | None,
     ) -> None:
         """Initialize a new FFig instance.
@@ -167,6 +168,10 @@ class FFig:
             Number of subplot rows, by default 1
         ncols : int, optional
             Number of subplot columns, by default 1
+        title : str | None, optional
+            Figure title applied by save() and show(): on the current axis
+            for single-axis figures, escalated to a figure-level suptitle
+            when the figure has more than one axis, by default None
         **kwargs : float | str | bool | dict | None
             Additional keyword arguments:
             - isubplot : int
@@ -239,6 +244,7 @@ class FFig:
         self.set_cycle(self.colors, self.presets["color_seq"], self.presets["linestyle_seq"])
 
         # Store global variables
+        self.title = title  # figure title applied on save/show
         self.figure_show = kwargs["show"]  # show figure after saving
         self.subplot_index = 0
         self.subplot_nrows = nrows
@@ -1137,6 +1143,24 @@ class FFig:
         except (ValueError, TypeError):
             self.logger.exception("set_cycle(): Cannot set cycle for color and linestyle")
 
+    def _apply_title(self: FFig) -> None:
+        """Apply the configured figure title, if any.
+
+        The title is placed on the current axis for single-axis figures and
+        escalated to a figure-level suptitle when the figure contains more
+        than one axis.
+
+        This is called automatically by save() and show() so that a title
+        passed to __init__ is included in the final rendering. No-op when
+        no title was provided.
+        """
+        if self.title is None:
+            return
+        if self.subplot_nrows * self.subplot_ncols > 1:
+            self.handle_fig.suptitle(self.title)
+        else:
+            self.set_title(self.title)
+
     def set_parameters(self: FFig) -> None:
         """Set figure parameters for optimal layout.
 
@@ -1207,6 +1231,8 @@ class FFig:
         """Show figure in interactive console.
 
         Displays the figure in the current backend's interactive window.
+        If a title was passed to __init__, it is applied: as a suptitle for
+        multi-axis figures, otherwise as the current axis title.
         Automatically calls set_parameters() before showing.
 
         Parameters
@@ -1230,6 +1256,7 @@ class FFig:
         >>> fig.show(block=True)  # Block until window closed
 
         """
+        self._apply_title()
         self.set_parameters()
         plt.show(block=block)
 
@@ -1258,6 +1285,12 @@ class FFig:
             - transparent : bool
                 Whether to save with transparent background
 
+        Notes
+        -----
+        If a title was passed to __init__, it is applied before saving or
+        showing: as a suptitle for multi-axis figures, otherwise as the
+        current axis title.
+
         Returns
         -------
         list[Path]
@@ -1273,6 +1306,8 @@ class FFig:
         """
         kwargs.setdefault("dpi", 300)  # Default to 300 dpi
         saved_files = []
+
+        self._apply_title()
 
         if filename:
             filepath = Path(filename)

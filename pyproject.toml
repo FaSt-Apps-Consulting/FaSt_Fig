@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "fast_fig"
 version = "0.8.3"
@@ -7,8 +11,15 @@ authors = [
 ]
 readme = "README.md"
 license = "MIT"
+license-files = ["LICEN[CS]E*"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Visualization",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
 ]
 keywords = ["matplotlib", "figure"]
@@ -18,10 +29,13 @@ dependencies = [
     "matplotlib>=3.6.0",
     "pandas>=2.1.0",
     "pyyaml>=6.0.2",
-    "logging>=0.4.0",
-    "pathlib>=1.0.0",
-    "typing-extensions>=4.0.0",
 ]
+
+[project.urls]
+Homepage = "https://www.fast-apps.de"
+Repository = "https://codeberg.org/FaSt-Apps/FaSt_Fig"
+Issues = "https://codeberg.org/FaSt-Apps/FaSt_Fig/issues"
+Changelog = "https://codeberg.org/FaSt-Apps/FaSt_Fig/src/branch/main/CHANGELOG.md"
 
 [tool.ruff]
 line-length = 100
