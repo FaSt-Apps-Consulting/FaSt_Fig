@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fast_fig"
-version = "0.8.3"
+version = "0.8.4"
 description = "FaSt_Fig is a wrapper for matplotlib with templates."
 authors = [
     {name = "Fabian Stutzki", email = "fast@fast-apps.de"}

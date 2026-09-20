@@ -1,5 +1,12 @@
 # Changelog of FaSt_Fig
 
+## [0.8.4] - 2026-09-20
+
+- Add title argument to FFig, applied by save() and show()
+- Add PyPI publish pipeline with trusted publishing
+- Align packaging with the Python Packaging User Guide (explicit build-system, drop stdlib-shadowing dependencies, add project URLs and classifiers)
+- Update GitHub Actions to Node 24 runtime
+
 ## [0.8.3] - 2026-09-14
 
 - Improve typing for array-like arguments
