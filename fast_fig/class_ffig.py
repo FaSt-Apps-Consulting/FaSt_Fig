@@ -1057,7 +1057,7 @@ class FFig:
             for ilabel, iline in enumerate(self.current_axis.lines):
                 iline.set_label(labels[ilabel])
         _, labels = self.current_axis.get_legend_handles_labels()
-        if np.size(self.current_axis.lines) != 0 and len(labels) != 0:
+        if len(labels) != 0:
             self.current_axis.legend(*args, **kwargs)
 
     def legend_entries(self) -> tuple[list[Line2D], list[str]]:

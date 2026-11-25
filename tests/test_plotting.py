@@ -227,8 +227,12 @@ def test_legend_with_labels() -> None:
     with FFig(show=SHOW) as fig:
         fig.plot([1, 2], [3, 4])
         fig.legend(labels=["New Label"])
-        _, labels = fig.current_axis.get_legend_handles_labels()
-        assert "New Label" in labels
+        axis = fig.current_axis
+        assert axis is not None
+        legend = axis.get_legend()
+        assert legend is not None
+        FigureCanvasAgg(fig.handle_fig).draw()
+        assert [text.get_text() for text in legend.get_texts()] == ["New Label"]
 
 
 def test_legend_entries_check() -> None:

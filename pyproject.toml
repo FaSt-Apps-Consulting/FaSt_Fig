@@ -63,6 +63,7 @@ author = "Fabian Stutzki"
 
 [dependency-groups]
 dev = [
+    "ipykernel>=7.4.0",
     "pytest>=8.4.0",
     "pytest-cov>=6.1.1",
     "ruff>=0.16.7",
