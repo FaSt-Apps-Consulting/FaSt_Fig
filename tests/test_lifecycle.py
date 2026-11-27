@@ -9,6 +9,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib.colors import to_rgba
 
 from fast_fig import FFig
 
@@ -27,15 +28,20 @@ def test_context_manager() -> None:
     )
 
 
-def test_clear() -> None:
-    """Test clearing figure content."""
-    fig = FFig(show=SHOW)
+@pytest.mark.parametrize(("nrows", "ncols", "index"), [(1, 1, 0), (2, 2, 3)])
+def test_clear(nrows: int, ncols: int, index: int) -> None:
+    """Clearing restores attached axes and preserves the selected subplot."""
+    fig = FFig(nrows=nrows, ncols=ncols, show=SHOW)
+    fig.subplot(index)
     fig.plot([1, 2, 3])
     assert len(fig.current_axis._children) == 1, "Plot should generate one line"  # noqa: SLF001
 
     # Test successful clear
     success = fig.clear()
     assert success is True, "Clear should return True on success"
+    assert len(fig.handle_fig.axes) == nrows * ncols
+    assert fig.current_axis in fig.handle_fig.axes
+    assert fig.subplot_index == index
     assert len(fig.current_axis._children) == 0, "Clear should remove all plot elements"  # noqa: SLF001
 
     # Test reuse after clear
@@ -95,6 +101,54 @@ def test_getattr_delegation() -> None:
         # Non-existent attribute should raise AttributeError
         with pytest.raises(AttributeError, match="cannot be processed"):
             _ = fig.non_existent_attribute
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        "get_title",
+        "set_title",
+        "get_xlabel",
+        "set_xlabel",
+        "get_xlim",
+        "get_ylim",
+        "set_xscale",
+        "set_yscale",
+        "set_prop_cycle",
+        "set_facecolor",
+        "tick_params",
+        "format_coord",
+        "twinx",
+    ],
+)
+def test_non_plot_delegation_preserves_bound_methods(method: str) -> None:
+    """Forward ordinary axes methods with their original binding and metadata."""
+    with FFig(show=SHOW) as fig:
+        native = getattr(fig.current_axis, method)
+        forwarded = getattr(fig, method)
+        assert forwarded == native
+        assert forwarded.__self__ is fig.current_axis
+        assert forwarded.__func__ is native.__func__
+
+
+@pytest.mark.parametrize(("method", "args"), [("get_title", ()), ("set_title", ("Title",))])
+def test_non_plot_calls_do_not_reset_custom_axis_cycles(method: str, args: tuple[str, ...]) -> None:
+    """Reading or formatting a custom axis does not install FFig's cycle."""
+    with FFig(show=SHOW) as fig:
+        axis = fig.current_axis.twinx()
+        axis.set_prop_cycle(color=["magenta"])
+        fig.current_axis = axis
+        getattr(fig, method)(*args)
+        line = axis.plot([1, 2])[0]
+        assert to_rgba(line.get_color()) == (1, 0, 1, 1)
+
+
+def test_delegated_setter_returns_the_original_artist() -> None:
+    """Forwarding a setter preserves its normal result and visible state."""
+    with FFig(show=SHOW) as fig:
+        title = fig.set_title("Title")
+        assert title is fig.current_axis.title
+        assert fig.get_title() == "Title"
 
 
 def test_getattr_delegation_boost() -> None:

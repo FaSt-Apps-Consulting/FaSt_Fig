@@ -53,13 +53,15 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from cycler import cycler
 from packaging import version
 
 from . import presets
+from ._colors import AXES_PLOT_METHODS, ColorManager
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, MutableMapping, Sequence
     from types import TracebackType
+    from typing import Literal
 
     from matplotlib.collections import PathCollection, PolyCollection, QuadMesh
     from matplotlib.colorbar import Colorbar
@@ -234,14 +236,9 @@ class FFig:
         mpl.rc("font", family=kwargs["fontfamily"])
         mpl.rc("lines", linewidth=kwargs["linewidth"])
 
-        # Convert colors to ndarray and scale to 1 instead of 255
-        self.colors = {}
-        for iname, icolor in self.presets["colors"].items():
-            if np.max(icolor) > 1:
-                self.colors[iname] = np.array(icolor) / 255
-
-        # Define cycle with colors, color_seq and linestyle_seq
-        self.set_cycle(self.colors, self.presets["color_seq"], self.presets["linestyle_seq"])
+        self._color_manager = ColorManager(
+            self.presets["colors"], self.presets["color_seq"], self.presets["linestyle_seq"]
+        )
 
         # Store global variables
         self.title = title  # figure title applied on save/show
@@ -252,7 +249,6 @@ class FFig:
         self.handle_bar = None
         self.handle_plot = None
         self.handle_surface = None
-        self.current_axis = None
         self.linewidth = kwargs["linewidth"]
 
         # Create figure
@@ -269,10 +265,13 @@ class FFig:
         )
 
     def __getattr__(self: FFig, item: str):  # noqa: ANN204
-        """Pass unkown methods to current_axis, handle_plot, handle_axis or handle_fig."""
+        """Forward attributes unchanged except for plotting and axis-clear tracking."""
         # Check attributes of current_axis
         if hasattr(self.current_axis, item):
-            return getattr(self.current_axis, item)
+            attribute = getattr(self.current_axis, item)
+            if callable(attribute) and (item in AXES_PLOT_METHODS or item == "cla"):
+                return self._color_manager.track_plot(self.current_axis, attribute)
+            return attribute
 
         # Check attributes of handle_plt
         if hasattr(self.handle_plot, item):
@@ -288,6 +287,21 @@ class FFig:
 
         msg = f"'{item}' cannot be processed as axis or figure property.'"
         raise AttributeError(msg)
+
+    @property
+    def colors(self) -> MutableMapping[str, npt.NDArray[np.float64]]:
+        """Return the mutable, normalized palette owned by this figure."""
+        return self._color_manager.palette
+
+    @colors.setter
+    def colors(self, colors: Mapping[str, npt.ArrayLike]) -> None:
+        """Validate a replacement palette without changing the active cycle."""
+        self._color_manager.set_palette(colors)
+
+    @property
+    def last_color(self) -> npt.ArrayLike:
+        """Return the final generated plot color, resolving colormaps before drawing."""
+        return self._color_manager.last_color
 
     def set_current_axis(self: FFig, index: int | None = None) -> None:
         """Set current axis index."""
@@ -320,8 +334,8 @@ class FFig:
         index: int | None = None,
         wspace: float | None = None,
         hspace: float | None = None,
-        sharex: bool | str = False,
-        sharey: bool | str = False,
+        sharex: bool | Literal["none", "all", "row", "col"] = False,
+        sharey: bool | Literal["none", "all", "row", "col"] = False,
     ) -> None:
         """Set or create subplot configuration and select current axis.
 
@@ -396,15 +410,21 @@ class FFig:
             self.subplot_hspace = hspace
 
             self.handle_fig.clf()
-            self.handle_axis = self.handle_fig.subplots(
-                nrows=self.subplot_nrows,
-                ncols=self.subplot_ncols,
-                sharex=self.subplot_sharex,
-                sharey=self.subplot_sharey,
-            )
-            self.handle_fig.subplots_adjust(wspace=self.subplot_wspace, hspace=self.subplot_hspace)
+            self._create_axes()
 
         self.set_current_axis(index=index)
+
+    def _create_axes(self) -> None:
+        """Create the configured subplot grid and install this figure's color cycles."""
+        self.handle_axis = self.handle_fig.subplots(
+            nrows=self.subplot_nrows,
+            ncols=self.subplot_ncols,
+            sharex=self.subplot_sharex,
+            sharey=self.subplot_sharey,
+        )
+        self.handle_fig.subplots_adjust(wspace=self.subplot_wspace, hspace=self.subplot_hspace)
+        self._color_manager.reset()
+        self._color_manager.apply(self.handle_fig.axes)
 
     def bar_plot(self: FFig, *args: DataLike, **kwargs: DataLike) -> BarContainer:
         """Create a bar plot.
@@ -445,7 +465,8 @@ class FFig:
         >>> fig.bar_plot([1, 2], [4, 5], bottom=[1, 1])  # Stacked bars
 
         """
-        self.handle_bar = self.current_axis.bar(*args, **kwargs)
+        with self._color_manager.track_artists(self.current_axis):
+            self.handle_bar = self.current_axis.bar(*args, **kwargs)
         return self.handle_bar
 
     def plot(
@@ -479,13 +500,14 @@ class FFig:
         if PANDAS_AVAILABLE and isinstance(data, pd.DataFrame):
             # Plot each column of the DataFrame
             for column in data.columns:
-                lines = self.current_axis.plot(
-                    data.index,
-                    data[column],
-                    *args,
-                    label=column,
-                    **kwargs,
-                )
+                with self._color_manager.track_artists(self.current_axis):
+                    lines = self.current_axis.plot(
+                        data.index,
+                        data[column],
+                        *args,
+                        label=column,
+                        **kwargs,
+                    )
                 plot_objects.extend(lines)
             # Set x-label based on index type
             if isinstance(data.index, pd.DatetimeIndex):
@@ -498,7 +520,8 @@ class FFig:
                 if np.shape(data_array)[0] > np.shape(data_array)[1]:
                     data_array = data_array.T
                 for imat in data_array[1:]:
-                    lines = self.current_axis.plot(data_array[0, :], imat, *args, **kwargs)
+                    with self._color_manager.track_artists(self.current_axis):
+                        lines = self.current_axis.plot(data_array[0, :], imat, *args, **kwargs)
                     plot_objects.extend(lines)
             elif (
                 len(args) > 0
@@ -506,10 +529,12 @@ class FFig:
                 and all(np.shape(entry) == np.shape(data_array) for entry in args[0])
             ):
                 for y in args[0]:
-                    lines = self.current_axis.plot(data_array, y, *args[1:], **kwargs)
+                    with self._color_manager.track_artists(self.current_axis):
+                        lines = self.current_axis.plot(data_array, y, *args[1:], **kwargs)
                     plot_objects.extend(lines)
             else:
-                lines = self.current_axis.plot(data_array, *args, **kwargs)
+                with self._color_manager.track_artists(self.current_axis):
+                    lines = self.current_axis.plot(data_array, *args, **kwargs)
                 plot_objects.extend(lines)
 
         self.handle_plot = plot_objects
@@ -613,46 +638,28 @@ class FFig:
         """
         if color is None:
             color = self.last_color
-        return self.current_axis.fill_between(
-            *args,
-            color=color,
-            alpha=alpha,
-            linewidth=linewidth,
-            **kwargs,
-        )
+        with self._color_manager.track_artists(self.current_axis):
+            return self.current_axis.fill_between(
+                *args,
+                color=color,
+                alpha=alpha,
+                linewidth=linewidth,
+                **kwargs,
+            )
 
-    @property
-    def last_color(self) -> np.ndarray:
-        """Return last color code used by plot.
-
-        Returns
-        -------
-        np.ndarray
-            RGB color array
-
-        Raises
-        ------
-        ValueError
-            If no plot exists yet
-
-        """
-        if self.handle_plot is None or len(self.handle_plot) == 0:
-            msg = "No plot exists yet to get color"
-            raise ValueError(msg)
-        return self.handle_plot[0].get_color()
-
-    def get_next_color(self) -> np.ndarray:
+    def get_next_color(self) -> npt.ArrayLike:
         """Return next color code used for plot.
 
-        Note: This method advances the color cycler.
+        This advances only the current axis's native line cycle. It does not
+        consume the separate fill/scatter cycle or change last_color.
 
         Returns
         -------
-        np.ndarray
-            RGB color array
+        numpy.typing.ArrayLike
+            Next color specification from Matplotlib's line cycle
 
         """
-        return self.current_axis._get_lines.get_next_color()  # noqa: SLF001
+        return self._color_manager.get_next_color(self.current_axis)
 
     def pcolor(
         self: FFig,
@@ -692,7 +699,8 @@ class FFig:
 
         """
         kwargs.setdefault("cmap", "nipy_spectral")
-        self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
+        with self._color_manager.track_artists(self.current_axis):
+            self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
         return self.handle_surface
 
     def pcolor_log(
@@ -742,7 +750,8 @@ class FFig:
         if vmax is not None:
             kwargs_log["vmax"] = vmax
         kwargs["norm"] = mpl.colors.LogNorm(**kwargs_log)
-        self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
+        with self._color_manager.track_artists(self.current_axis):
+            self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
         return self.handle_surface
 
     def pcolor_square(
@@ -782,7 +791,8 @@ class FFig:
 
         """
         kwargs.setdefault("cmap", "nipy_spectral")
-        self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
+        with self._color_manager.track_artists(self.current_axis):
+            self.handle_surface = self.current_axis.pcolormesh(*args, **kwargs)
         self.current_axis.axis("off")
         self.current_axis.set_aspect("equal")
         self.current_axis.set_xticks([])
@@ -822,7 +832,8 @@ class FFig:
         >>> fig.contour(z, levels=[0.2, 0.5, 0.8], colors='black')
 
         """
-        self.handle_surface = self.current_axis.contour(*args, **kwargs)
+        with self._color_manager.track_artists(self.current_axis):
+            self.handle_surface = self.current_axis.contour(*args, **kwargs)
         return self.handle_surface
 
     def scatter(
@@ -866,7 +877,8 @@ class FFig:
         >>> fig.scatter(x, y, c=colors, s=500*colors, alpha=0.5, cmap='viridis')
 
         """
-        self.handle_surface = self.current_axis.scatter(*args, **kwargs)
+        with self._color_manager.track_artists(self.current_axis):
+            self.handle_surface = self.current_axis.scatter(*args, **kwargs)
         return self.handle_surface
 
     def colorbar(
@@ -1110,19 +1122,23 @@ class FFig:
 
     def set_cycle(
         self: FFig,
-        colors: dict[str, list[int]],
-        color_seq: list[str],
-        linestyle_seq: list[str],
+        colors: Mapping[str, npt.ArrayLike],
+        color_seq: Sequence[str],
+        linestyle_seq: Sequence[str],
     ) -> None:
-        """Set cycle for colors and linestyles (will be used in this order).
+        """Reset this figure's axes to the supplied color and linestyle cycle.
+
+        The configuration also applies to future subplot grids. Unknown color
+        names are reported and ignored when valid entries remain. Invalid
+        configurations are logged and leave the previous cycle unchanged.
 
         Parameters
         ----------
-        colors : dict[str, list[int]]
-            Dictionary mapping color names to RGB values (0-255)
-        color_seq : list[str]
+        colors : Mapping[str, numpy.typing.ArrayLike]
+            Palette with normalized or byte RGB/RGBA values or color strings
+        color_seq : Sequence[str]
             Sequence of color names to use from the colors dictionary
-        linestyle_seq : list[str]
+        linestyle_seq : Sequence[str]
             Sequence of line styles to use (e.g., ['-', '--', ':', '-.'])
 
         Example
@@ -1131,15 +1147,8 @@ class FFig:
         >>> fig.set_cycle(colors, ['blue', 'red'], ['-', '--'])
 
         """
-        # generate cycle from color_seq and linestyle_seq
-        color_list = [colors[icolor] for icolor in color_seq if icolor in colors]
-        cyc_color = np.tile(color_list, (np.size(linestyle_seq), 1))
-        cyc_linestyle = np.repeat(linestyle_seq, np.shape(color_list)[0])
         try:
-            mpl.rc(
-                "axes",
-                prop_cycle=(cycler("color", cyc_color) + cycler("linestyle", cyc_linestyle)),
-            )
+            self._color_manager.set_cycle(colors, color_seq, linestyle_seq)
         except (ValueError, TypeError):
             self.logger.exception("set_cycle(): Cannot set cycle for color and linestyle")
 
@@ -1375,6 +1384,8 @@ class FFig:
         """
         try:
             self.handle_fig.clf(*args, **kwargs)
+            self._create_axes()
+            self.set_current_axis(index=self.subplot_index)
         except (ValueError, TypeError, AttributeError):
             self.logger.exception("Error clearing figure")
             return False

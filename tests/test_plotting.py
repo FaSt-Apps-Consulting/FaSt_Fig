@@ -137,11 +137,30 @@ def test_plot_dataframe() -> None:
     fig.close()
 
 
-def test_bar_plot() -> None:
-    """Test bar_plot method."""
+@pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not installed")
+def test_dataframe_plot_error_keeps_successful_column_color() -> None:
+    """A later column error preserves the color of a line already created."""
+    data = pd.DataFrame({"valid": [1, 2], "invalid": [object(), object()]})
     with FFig(show=SHOW) as fig:
-        fig.bar_plot([1, 2, 3], [4, 5, 6])
-        assert len(fig.current_axis.patches) == 3
+        with pytest.raises(TypeError):
+            fig.plot(data)
+        np.testing.assert_allclose(np.asarray(fig.last_color, dtype=float), fig.colors["blue"])
+
+
+@pytest.mark.parametrize("plot_method", ["bar", "bar_plot"])
+def test_bar_plot_after_scatter(plot_method: str) -> None:
+    """Both bar entry points preserve heights, positions, and colors after scatter."""
+    with FFig(show=SHOW) as fig:
+        fig.scatter([1, 2], [2, 1], color="blue")
+        bars = getattr(fig, plot_method)([1, 2, 3], [4, 5, 6], color=["red", "green", "orange"])
+        FigureCanvasAgg(fig.handle_fig).draw()
+        assert len(fig.handle_fig.axes[0].patches) == 3
+        np.testing.assert_allclose([bar.get_height() for bar in bars], [4, 5, 6])
+        np.testing.assert_allclose([bar.get_x() + bar.get_width() / 2 for bar in bars], [1, 2, 3])
+        np.testing.assert_allclose(
+            [bar.get_facecolor() for bar in bars],
+            mpl.colors.to_rgba_array(["red", "green", "orange"]),
+        )
 
 
 def test_pcolor_square() -> None:
@@ -152,15 +171,17 @@ def test_pcolor_square() -> None:
         assert fig.handle_surface is not None
 
 
-def test_fill_between() -> None:
-    """Test fill_between method."""
+@pytest.mark.parametrize("plot_method", ["plot", "semilogx", "semilogy", "scatter"])
+def test_fill_between(plot_method: str) -> None:
+    """Fill inherits the latest color from common plotting methods."""
     with FFig(show=SHOW) as fig:
-        x = np.linspace(0, 1, 10)
+        x = np.linspace(0.1, 1, 10)
         y1 = x
         y2 = x**2
-        fig.plot(x, y1)  # Create a plot first so last_color works
+        getattr(fig, plot_method)(x, y1, color="red")
         poly = fig.fill_between(x, y1, y2)
         assert isinstance(poly, mpl.collections.PolyCollection)
+        np.testing.assert_allclose(poly.get_facecolor(), [mpl.colors.to_rgba("red", alpha=0.1)])
 
 
 def test_plot_matrix_transpose() -> None:
